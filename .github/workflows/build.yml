@@ -1,0 +1,38 @@
+name: Build + Test w/clang
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  merge_group:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: apt-get dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install wget cmake gnucobol
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 16
+        wget https://github.com/google/googletest/releases/download/v1.16.0/googletest-1.16.0.tar.gz
+        tar -xf googletest-1.16.0.tar.gz
+    - name: Build gtest
+      run: |
+        cd googletest-1.16.0
+        cmake CMakeLists.txt
+        make
+    - name: Build
+      run: |
+        GTEST_HDRS=${{ github.workspace }}/googletest-1.16.0/googletest/include/ \
+        GTEST_LIBS=${{ github.workspace }}/googletest-1.16.0/lib/ \
+        CXX=clang++-16 LLVM_CONFIG=llvm-config-16 bash -x build.sh
+    - name: Test
+      run: |
+        CC=clang-16 bash -x run-tests.sh

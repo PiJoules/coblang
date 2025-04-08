@@ -1,0 +1,285 @@
+       IDENTIFICATION DIVISION.
+         PROGRAM-ID. string.
+       DATA DIVISION.
+         working-storage section.
+      * NOTE: Be sure to keep these in working-storage. Otherwise, gnucobol
+      * will attempt to deallocate the things these point to once the
+      * program run ends.
+      *
+      * TODO: Is this specific to gnucobol or part of the language?
+           01 src-char-buffer pic x based.
+           01 dst-char-buffer pic x based.
+
+         local-storage section.
+           01 char-iter usage index value 0.
+
+           01 src-ptr usage pointer.
+           01 dst-ptr usage pointer.
+
+           01 newcap usage binary-c-long unsigned.
+           01 tmp-unsigned-long usage binary-c-long unsigned.
+
+         LINKAGE SECTION.
+           copy "cobl-string-constants.cpy".
+
+           01 local-string.
+              copy "cobl-string.cpy".
+
+           01 c-string usage pointer.
+           01 with-advancing pic x value 'N'.
+              88 do-advance value 'Y'.
+              88 no-advance value 'N'.
+
+           01 str-length usage binary-c-long unsigned.
+           01 str-data usage pointer.
+           01 char pic x.
+           01 newcap-arg usage binary-c-long unsigned.
+
+           01 pic-ptr usage pointer.
+           01 pic-length usage index.
+
+           01 idx-arg usage binary-c-long unsigned.
+           01 char-return pic x.
+
+      * 0 indicates equal
+      * < 0 indicates str1 < str2
+      * > 0 indicates str1 > str2
+           01 compare-return usage binary-int.
+
+       PROCEDURE DIVISION.
+         stop run.
+
+      *
+      * Construct a zero-length string.
+      *
+      * NOTE: This assumes there's existing storage for the string. It will
+      * not create new storage for the record representing the string. The
+      * only allocations this will do is for the underlying pointer. This is
+      * mainly relevant for usage across C API boundaries. The correct way to
+      * use this from C is via the "coblang.h" header which provides opaque
+      * structs.
+      *
+       entry "string-construct" using local-string.
+         move 0 to cobl-string-length in local-string.
+         move cobl-string-default-capacity
+              to cobl-string-capacity in local-string.
+
+      * TODO: Check at compile-time if allocate is supported.
+      * otherwise, we can try other alloc-like implementations.
+         allocate cobl-string-capacity in local-string characters
+                  returning cobl-string-ptr in local-string.
+
+         set address of src-char-buffer to
+           cobl-string-ptr in local-string.
+
+         move x"00" to src-char-buffer.
+
+      * NOTE: Use `goback` instead of `exit program`. Gnucobol seems to treat
+      * calls to these entry points as part of the main program so calls to
+      * these functions from C doesn't return from them and continues to the
+      * next entry point, rsulting in errors when testing.
+         goback.
+
+      *
+      * Construct a new string from a null-terminated c-style string.
+      *
+       entry "string-construct-from-c-str"
+             using local-string c-string.
+         move function content-length(c-string)
+              to cobl-string-length in local-string.
+         move cobl-string-default-capacity
+              to cobl-string-capacity in local-string.
+
+         perform until
+                 cobl-string-capacity in local-string >=
+                 (cobl-string-length in local-string + 1)
+           compute cobl-string-capacity in local-string =
+             cobl-string-capacity in local-string * 2
+         end-perform.
+
+         allocate cobl-string-capacity in local-string characters
+                  returning cobl-string-ptr in local-string.
+
+         call "cobl-memcpy" using cobl-string-ptr in local-string
+                                  c-string
+                                  cobl-string-length in local-string.
+
+         move cobl-string-ptr in local-string to src-ptr.
+         set src-ptr up by cobl-string-length in local-string.
+         set address of src-char-buffer to src-ptr.
+         move x"00" to src-char-buffer.
+
+         goback.
+
+      *
+      * Destroy a string.
+      *
+       entry "string-destroy" using local-string.
+         free cobl-string-ptr in local-string.
+         goback.
+
+      *
+      * Clear a string.
+      *
+       entry "string-clear" using local-string.
+         move 0 to cobl-string-length in local-string.
+         set address of src-char-buffer to
+             cobl-string-ptr in local-string.
+         move x"00" to src-char-buffer.
+         goback.
+
+      * 
+      * Display a string.
+      *
+       entry "string-display" using local-string
+                                    with-advancing.
+         move cobl-string-ptr in local-string to src-ptr.
+         move 0 to char-iter.
+         perform until char-iter >= cobl-string-length in local-string
+           set address of src-char-buffer to src-ptr
+           display src-char-buffer with no advancing
+
+           set src-ptr up by 1
+           set char-iter up by 1
+         end-perform.
+         if do-advance
+           display " ".
+
+         goback.
+
+      * 
+      * Move a string to a cobol string.
+      *
+       entry "string-copy-to-pic" using local-string pic-ptr pic-length.
+         set char-iter to 0.
+         move cobl-string-ptr in local-string to src-ptr.
+         move pic-ptr to dst-ptr.
+
+      * Clear out the string so we can do normal PIC comparisons with it.
+         perform until char-iter >= pic-length
+           set address of dst-char-buffer to dst-ptr
+           move spaces to dst-char-buffer
+
+           set char-iter up by 1
+           set dst-ptr up by 1
+         end-perform.
+         move pic-ptr to dst-ptr.
+         move 0 to char-iter.
+
+         perform until char-iter >= pic-length or
+                       char-iter >= cobl-string-length in local-string
+           set address of src-char-buffer to src-ptr
+           set address of dst-char-buffer to dst-ptr
+           move src-char-buffer to dst-char-buffer
+
+           set char-iter up by 1
+           set src-ptr up by 1
+           set dst-ptr up by 1
+         end-perform.
+
+         goback.
+
+      * 
+      * Meant to be called by C programs.
+      *
+       entry "string-length" using local-string str-length.
+         move cobl-string-length in local-string to str-length.
+         goback.
+
+       entry "string-data" using local-string str-data.
+         move cobl-string-ptr in local-string to str-data.
+         goback.
+
+       entry "string-at" using local-string idx-arg char-return.
+         move cobl-string-ptr in local-string to src-ptr.
+         set src-ptr up by idx-arg.
+         set address of src-char-buffer to src-ptr.
+         move src-char-buffer to char-return.
+         goback.
+
+       entry "string-reserve" using local-string newcap-arg.
+         move newcap-arg to newcap.
+       string-reserve.
+         if cobl-string-capacity in local-string >= newcap
+           goback.
+
+         allocate newcap characters returning dst-ptr.
+         call "cobl-memcpy" using dst-ptr
+                                  cobl-string-ptr in local-string
+                                  cobl-string-length in local-string.
+         free cobl-string-ptr in local-string.
+         move dst-ptr to cobl-string-ptr in local-string.
+         move newcap to cobl-string-capacity in local-string.
+       end-string-reserve.
+         goback.
+
+      *
+      * Erase a character in the string.
+      *
+       entry "string-erase" using local-string idx-arg.
+         move cobl-string-ptr in local-string to dst-ptr.
+         set dst-ptr up by idx-arg.
+         move dst-ptr to src-ptr.
+         set src-ptr up by 1.
+         move idx-arg to tmp-unsigned-long.
+         perform until tmp-unsigned-long >=
+                       cobl-string-length in local-string
+           set address of src-char-buffer to src-ptr
+           set address of dst-char-buffer to dst-ptr
+
+           move src-char-buffer to dst-char-buffer
+
+           set tmp-unsigned-long up by 1
+           set src-ptr up by 1
+           set dst-ptr up by 1
+         end-perform.
+         set cobl-string-length in local-string down by 1.
+         goback.
+
+      *
+      * Append a char to the end of the string.
+      *
+       entry "string-push-back" using local-string char.
+         if cobl-string-length in local-string >=
+            cobl-string-capacity in local-string
+      * Need to resize.
+           compute newcap = cobl-string-capacity in local-string * 2
+           perform string-reserve
+         end-if.
+
+         move cobl-string-ptr in local-string to src-ptr.
+         set src-ptr up by cobl-string-length in local-string.
+         set address of src-char-buffer to src-ptr.
+         move char to src-char-buffer.
+         set cobl-string-length in local-string up by 1.
+
+         set src-ptr up by 1.
+         set address of src-char-buffer to src-ptr.
+         move x"00" to src-char-buffer.
+
+         goback.
+
+       entry "string-compare-c-string" using local-string c-string
+             compare-return.
+         move cobl-string-ptr in local-string to src-ptr.
+         move c-string to dst-ptr.
+         perform forever
+           set address of src-char-buffer to src-ptr
+           set address of dst-char-buffer to dst-ptr
+
+           if src-char-buffer = x"00" and 
+              dst-char-buffer = x"00"
+             move 0 to compare-return
+             exit perform
+           else if src-char-buffer < dst-char-buffer
+             move -1 to compare-return
+             exit perform
+           else if src-char-buffer > dst-char-buffer
+             move 1 to compare-return
+             exit perform
+           end-if
+
+           set src-ptr up by 1
+           set dst-ptr up by 1
+         end-perform.
+         goback.
