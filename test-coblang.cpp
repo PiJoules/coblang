@@ -4,12 +4,16 @@
 
 #include "coblang.h"
 
-// NOTE: Invoke with `COB_LIBRARY_PATH=build/ COB_PRE_LOAD=<program-id> ...
+// These are unittests for functions part of the cobl-* library.
+//
+// Invoke with `COB_LIBRARY_PATH=build/ COB_PRE_LOAD=<program-id> ...
 // to ensure other entry points are callable.
+//
 // Example:
 //  
 //   COB_LIBRARY_PATH=build COB_PRE_LOAD=cobl-string ./build/test-coblang
 //
+// The `run-tests.sh` script invokes this test with the right env variables.
 
 namespace {
 

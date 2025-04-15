@@ -45,16 +45,12 @@
 
        entry "lexer-construct" using local-lexer
                                      local-string.
-         display "local-string: " no advancing.
-         call "string-display" using local-string 'Y'.
          set filename-buffer-size to length of filename-buffer.
-         display "filename-buffer length: " filename-buffer-size.
          call "string-copy-to-pic" using
             local-string
             address of filename-buffer
             filename-buffer-size.
 
-         display "opening '" function trim(filename-buffer) "'".
          open input lexer-file.
          perform check-status.
          goback.

@@ -9,3 +9,5 @@ https://gnucobol.sourceforge.io/doc/gnucobol.html (COMMAND-LINE keyword)
 http://www.3kranger.com/HP3000/mpeix/doc3k/BB243390049.15066/18.htm
 
 https://gnucobol.sourceforge.io/HTML/gnucobpg.html
+
+https://gnucobol.sourceforge.io/faq/index.htm 

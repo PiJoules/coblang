@@ -1,10 +1,10 @@
        IDENTIFICATION DIVISION.
-         PROGRAM-ID. parser.
+         PROGRAM-ID. codegen.
        environment division.
        DATA DIVISION.
          working-storage section.
       * FIXME: This acts as static storage but should probably exist once
-      * per parser.
+      * per codegen.
            01 LLVMContext usage pointer.
            01 LLVMInt32Type usage pointer.
            01 LLVMPtrType usage pointer.
@@ -90,28 +90,28 @@
            01 pic-buffer pic x(1024).
            78 pic-buffer-size value length of pic-buffer.
 
-           01 this-parser-lexer based.
+           01 this-codegen-lexer based.
               copy "lexer.cpy".
 
          LINKAGE SECTION.
-           01 this-parser.
-             copy "parser.cpy".
+           01 this-codegen.
+             copy "codegen.cpy".
 
            01 lexer-ptr-arg usage pointer.
 
        PROCEDURE DIVISION.
          stop run.
 
-       entry "parser-construct" using this-parser lexer-ptr-arg.
-         move lexer-ptr-arg to lexer-ptr in this-parser.
+       entry "codegen-construct" using this-codegen lexer-ptr-arg.
+         move lexer-ptr-arg to lexer-ptr in this-codegen.
 
          call "LLVMModuleCreateWithName"
               using "this-module"
-              returning llvm-module in this-parser.
+              returning llvm-module in this-codegen.
 
          call "LLVMCreateDIBuilder"
-              using by value llvm-module in this-parser
-              returning llvm-dibuilder in this-parser.
+              using by value llvm-module in this-codegen
+              returning llvm-dibuilder in this-codegen.
 
          call "LLVMInitializeX86TargetInfo".
          call "LLVMInitializeX86Target".
@@ -148,22 +148,22 @@
                 by value LLVMCodeGenLevelNone
                 by value LLVMRelocPIC
                 by value LLVMCodeModelDefault
-              returning llvm-target-machine in this-parser.
+              returning llvm-target-machine in this-codegen.
 
          call "LLVMDisposeMessage" using by value llvm-triple.
          call "LLVMDisposeMessage" using by value llvm-cpu.
          call "LLVMDisposeMessage" using by value llvm-features.
 
          call "LLVMCreateTargetDataLayout"
-              using by value llvm-target-machine in this-parser
+              using by value llvm-target-machine in this-codegen
               returning llvm-data-layout.
          call "LLVMSetModuleDataLayout"
               using
-                by value llvm-module in this-parser
+                by value llvm-module in this-codegen
                 by value llvm-data-layout.
 
          call "LLVMGetModuleContext"
-              using by value llvm-module in this-parser
+              using by value llvm-module in this-codegen
               returning LLVMContext.
          call "LLVMIntType" using by value 32 returning LLVMInt32Type.
          call "LLVMPointerTypeInContext"
@@ -178,15 +178,15 @@
 
          goback.
 
-       entry "parser-destroy" using this-parser.
+       entry "codegen-destroy" using this-codegen.
          call "LLVMDisposeDIBuilder"
-              using by value llvm-dibuilder in this-parser.
+              using by value llvm-dibuilder in this-codegen.
 
          call "LLVMDisposeModule"
-              using by value llvm-module in this-parser.
+              using by value llvm-module in this-codegen.
          goback.
 
-       entry "parser-parse" using this-parser.
+       entry "codegen-run" using this-codegen.
          perform insert-main-func.
 
          call "LLVMAppendBasicBlock" using
@@ -199,13 +199,13 @@
               by value builder-ptr
               by value bb-entry-ptr.
 
-         set address of this-parser-lexer to lexer-ptr in this-parser.
+         set address of this-codegen-lexer to lexer-ptr in this-codegen.
 
-         perform until lexer-eof in this-parser-lexer = 'Y'
+         perform until lexer-eof in this-codegen-lexer = 'Y'
            call "string-construct" using token-string
-           call "lexer-lex" using this-parser-lexer token-string
+           call "lexer-lex" using this-codegen-lexer token-string
 
-           if lexer-eof in this-parser-lexer = 'Y'
+           if lexer-eof in this-codegen-lexer = 'Y'
              exit perform
            end-if
 
@@ -251,10 +251,27 @@
       *
       * Write the module to an object file.
       *
-       entry "write-obj-file" using this-parser.
+       entry "write-obj-file" using this-codegen.
+         call "LLVMVerifyModule"
+              using
+                by value llvm-module in this-codegen
+                by value LLVMPrintMessageAction
+                by value zeros
+              returning llvm-result.
+
+         if llvm-result not = zero
+           display "Verify module failed."
+           call "LLVMDumpModule"
+                using by value llvm-module in this-codegen
+           stop run
+         end-if.
+
+         call "LLVMDumpModule"
+              using by value llvm-module in this-codegen.
+
          call "LLVMTargetMachineEmitToFile" using
-              by value llvm-target-machine in this-parser
-              by value llvm-module in this-parser
+              by value llvm-target-machine in this-codegen
+              by value llvm-module in this-codegen
               by content function concatenate("out.obj", x"00")
               by value LLVMObjectFile
               by reference llvm-error
@@ -271,7 +288,7 @@
       * We parsed an EXIT token.
        handle-exit.
          call "string-clear" using token-string.
-         call "lexer-lex" using this-parser-lexer token-string.
+         call "lexer-lex" using this-codegen-lexer token-string.
 
          call "string-copy-to-pic" using
               token-string
@@ -297,7 +314,7 @@
 
        get-exit-func.
          call "LLVMGetNamedFunction" using
-              by value llvm-module in this-parser
+              by value llvm-module in this-codegen
               by content function concatenate("exit", x"00")
               returning exit-func-ptr.
 
@@ -324,7 +341,7 @@
          call "vector-destroy" using func-type-params.
 
          call "LLVMAddFunction" using
-              by value llvm-module in this-parser
+              by value llvm-module in this-codegen
               by content function concatenate("exit", x"00")
               by value exit-func-type-ptr
               returning exit-func-ptr.
@@ -333,7 +350,7 @@
       * We parsed and popped a DISPLAY token. Spin up a printf.
        handle-display.
          call "string-clear" using token-string.
-         call "lexer-lex" using this-parser-lexer token-string.
+         call "lexer-lex" using this-codegen-lexer token-string.
 
          move 0 to tmp-unsigned-long.
          call "string-at" using token-string tmp-unsigned-long tmp-char.
@@ -370,7 +387,7 @@
 
        get-printf-func.
          call "LLVMGetNamedFunction" using
-              by value llvm-module in this-parser
+              by value llvm-module in this-codegen
               by content function concatenate("printf", x"00")
               returning printf-func-ptr.
 
@@ -397,7 +414,7 @@
          call "vector-destroy" using func-type-params.
 
          call "LLVMAddFunction" using
-              by value llvm-module in this-parser
+              by value llvm-module in this-codegen
               by content function concatenate("printf", x"00")
               by value printf-func-type-ptr
               returning printf-func-ptr.
@@ -405,7 +422,7 @@
 
        insert-main-func.
          call "LLVMGetNamedFunction" using
-              by value llvm-module in this-parser
+              by value llvm-module in this-codegen
               by content function concatenate("main", x"00")
               returning main-func-ptr.
 
@@ -438,7 +455,7 @@
 
       * `main()`
          call "LLVMAddFunction" using
-              by value llvm-module in this-parser
+              by value llvm-module in this-codegen
       * This is needed to create a null-terminated string.
               by content function concatenate("main", x"00")
               by value llvm-type-res

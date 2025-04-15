@@ -1,4 +1,4 @@
-# [WIP] coblang - The COBOL frontend for LLVM
+# [WIP] coblang - A COBOL frontend for LLVM
 
 ![Build Status w/Clang](https://github.com/PiJoules/coblang/actions/workflows/build.yml/badge.svg)
 
