@@ -98,6 +98,7 @@
              copy "codegen.cpy".
 
            01 lexer-ptr-arg usage pointer.
+           01 output-filename usage pointer.
 
        PROCEDURE DIVISION.
          stop run.
@@ -251,7 +252,7 @@
       *
       * Write the module to an object file.
       *
-       entry "write-obj-file" using this-codegen.
+       entry "write-obj-file" using this-codegen output-filename.
          call "LLVMVerifyModule"
               using
                 by value llvm-module in this-codegen
@@ -272,7 +273,7 @@
          call "LLVMTargetMachineEmitToFile" using
               by value llvm-target-machine in this-codegen
               by value llvm-module in this-codegen
-              by content function concatenate("out.obj", x"00")
+              by value output-filename
               by value LLVMObjectFile
               by reference llvm-error
               returning llvm-result.

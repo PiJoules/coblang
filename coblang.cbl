@@ -15,14 +15,23 @@
       * argv[i].
            01 arg usage pointer based.
 
-           01 arg1-string.
-             copy "cobl-string.cpy".
            01 coblang-lexer.
-             copy "lexer.cpy".
-           01 token-string.
-             copy "cobl-string.cpy".
+              copy "lexer.cpy".
            01 coblang-codegen.
-             copy "codegen.cpy".
+              copy "codegen.cpy".
+
+           01 output-file.
+              copy "cobl-string.cpy".
+           01 input-file.
+              copy "cobl-string.cpy".
+           01 tmp-string.
+              copy "cobl-string.cpy".
+           01 idx usage binary-long.
+
+           01 pic-buffer pic x(1024).
+           78 pic-buffer-size value length of pic-buffer.
+
+           01 default-output-file-name pic x(100) value "out.obj".
 
        PROCEDURE DIVISION.
          call "CBL_GC_HOSTED" using argc "argc".
@@ -35,27 +44,72 @@
 
       * arg now points to argv[1].
          set argv up by function byte-length(arg).
-         set address of arg to argv.
+         move 1 to idx.
 
-         call "string-construct-from-c-str" using arg1-string arg.
+         call "string-construct-from-pic-str" using
+              output-file
+              default-output-file-name
+              function length(
+                function trim(default-output-file-name TRAILING)).
+
+         perform until idx >= argc
+           set address of arg to argv
+           call "string-construct-from-c-str" using tmp-string arg
+
+           call "string-copy-to-pic" using
+                tmp-string
+                address of pic-buffer
+                pic-buffer-size
+
+           evaluate pic-buffer
+             when "-o"
+               perform handle-output-flag
+             when other
+               call "string-construct-move" using input-file tmp-string
+           end-evaluate
+
+           call "string-destroy" using tmp-string
+
+           set idx up by 1
+           set argv up by function byte-length(arg)
+         end-perform.
+
          display "compiling: " no advancing.
-         call "string-display" using arg1-string 'Y'.
+         call "string-display" using input-file 'Y'.
 
          call "lexer-construct" using
               coblang-lexer
-              cobl-string-ptr in arg1-string.
+              cobl-string-ptr in input-file.
 
          call "codegen-construct" using
               coblang-codegen
               address of coblang-lexer.
         
          call "codegen-run" using coblang-codegen.
-         call "write-obj-file" using coblang-codegen.
+
+         display "writing to: " no advancing.
+         call "string-display" using output-file 'Y'.
+
+         call "write-obj-file" using
+              coblang-codegen
+              cobl-string-ptr in output-file.
 
          call "codegen-destroy" using coblang-codegen.
          call "lexer-destroy" using coblang-lexer.
          
-         call "string-destroy" using token-string.
-         call "string-destroy" using arg1-string.
+         call "string-destroy" using input-file.
+         call "string-destroy" using output-file.
 
          STOP RUN.
+
+       handle-output-flag.
+         set idx up by 1.
+         if idx >= argc
+           display "No argument provided for `-o`"
+           stop run.
+
+         set argv up by function byte-length(arg).
+         set address of arg to argv.
+         call "string-destroy" using output-file.
+         call "string-construct-from-c-str" using output-file arg.
+       end-handle-output-flag.

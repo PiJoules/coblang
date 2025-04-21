@@ -2,28 +2,36 @@ import unittest
 import os
 import subprocess
 
+from pathlib import Path
 
-STAGE1_BIN = "build/coblang"
+
+BUILD_DIR = Path("build")
+STAGE1_BIN = BUILD_DIR / "coblang"
+TEST_DIR = Path("tests")
 
 
 class TestCompiler:
     def invoke(self, filename):
-        res = subprocess.run([self.bin, filename], capture_output=True)
+        objfile = str(BUILD_DIR / filename.name) + ".o"
+        res = subprocess.run(
+            [self.bin, str(filename), "-o", objfile], capture_output=True
+        )
         self.assertEqual(res.returncode, 0)
 
+        exefile = str(BUILD_DIR / "a.out")
         res = subprocess.run(
-            [os.environ.get("CC", "clang"), "out.obj", "-o", "a.out"],
+            [os.environ.get("CC", "clang"), objfile, "-o", exefile],
             capture_output=True,
         )
         self.assertEqual(res.returncode, 0)
 
-        res = subprocess.run(["./a.out"], capture_output=True)
+        res = subprocess.run([exefile], capture_output=True)
         self.assertEqual(res.returncode, 0)
 
         return res.stdout.decode("utf-8")
 
     def test_hello_world(self):
-        self.assertEqual(self.invoke("hello-world.cbl"), "Hello world\n")
+        self.assertEqual(self.invoke(TEST_DIR / "hello-world.cbl"), "Hello world\n")
 
 
 class TestStage1Compiler(unittest.TestCase, TestCompiler):

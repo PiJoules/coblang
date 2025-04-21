@@ -18,14 +18,18 @@
 
            01 newcap usage binary-c-long unsigned.
            01 tmp-unsigned-long usage binary-c-long unsigned.
+           01 c-string usage pointer.
+           01 c-string-length usage binary-c-long unsigned.
 
          LINKAGE SECTION.
            copy "cobl-string-constants.cpy".
 
            01 local-string.
               copy "cobl-string.cpy".
+           01 other-string.
+              copy "cobl-string.cpy".
 
-           01 c-string usage pointer.
+           01 c-string-arg usage pointer.
            01 with-advancing pic x value 'N'.
               88 do-advance value 'Y'.
               88 no-advance value 'N'.
@@ -45,6 +49,9 @@
       * < 0 indicates str1 < str2
       * > 0 indicates str1 > str2
            01 compare-return usage binary-int.
+
+           01 small-pic-str pic x(1024).
+           01 small-pic-str-length usage binary-c-long unsigned.
 
        PROCEDURE DIVISION.
          stop run.
@@ -81,11 +88,25 @@
          goback.
 
       *
+      * Construct a new string from a PIC-string. Note the string must be
+      * able to fit in our buffer.
+      *
+       entry "string-construct-from-pic-str"
+             using local-string small-pic-str small-pic-str-length.
+         move address of small-pic-str to c-string.
+         move small-pic-str-length to c-string-length.
+         perform string-construct-from-c-str.
+         goback.
+
+      *
       * Construct a new string from a null-terminated c-style string.
       *
        entry "string-construct-from-c-str"
-             using local-string c-string.
-         move function content-length(c-string)
+             using local-string c-string-arg.
+         move c-string-arg to c-string.
+         move function content-length(c-string) to c-string-length.
+       string-construct-from-c-str.
+         move c-string-length
               to cobl-string-length in local-string.
          move cobl-string-default-capacity
               to cobl-string-capacity in local-string.
@@ -108,6 +129,26 @@
          set src-ptr up by cobl-string-length in local-string.
          set address of src-char-buffer to src-ptr.
          move x"00" to src-char-buffer.
+       end-string-construct-from-c-str.
+         goback.
+
+      *
+      * Construct a new string by moving the contents of another string
+      * into this one. The old string where data was moved from is
+      * effectively destroyed and can be re-used but needs to explicitly
+      * be constructed.
+      *
+       entry "string-construct-move" using local-string other-string.
+         move cobl-string-length in other-string to
+              cobl-string-length in local-string.
+         move cobl-string-capacity in other-string to
+              cobl-string-capacity in local-string.
+         move cobl-string-ptr in other-string to
+              cobl-string-ptr in local-string.
+
+         move null to cobl-string-ptr in other-string.
+         move 0 to cobl-string-length in other-string.
+         move 0 to cobl-string-capacity in other-string.
 
          goback.
 
@@ -115,7 +156,21 @@
       * Destroy a string.
       *
        entry "string-destroy" using local-string.
-         free cobl-string-ptr in local-string.
+       string-destroy.
+         if cobl-string-ptr in local-string not = null
+           free cobl-string-ptr in local-string.
+       end-string-destroy.
+         goback.
+
+      *
+      * Copy the contents of one string into another.
+      *
+       entry "string-copy" using local-string other-string.
+      * TODO: Implement this more efficiently.
+         perform string-destroy.
+         move cobl-string-ptr in other-string to c-string.
+         move function content-length(c-string) to c-string-length.
+         perform string-construct-from-c-str.
          goback.
 
       *
@@ -259,10 +314,10 @@
 
          goback.
 
-       entry "string-compare-c-string" using local-string c-string
+       entry "string-compare-c-string" using local-string c-string-arg
              compare-return.
          move cobl-string-ptr in local-string to src-ptr.
-         move c-string to dst-ptr.
+         move c-string-arg to dst-ptr.
          perform forever
            set address of src-char-buffer to src-ptr
            set address of dst-char-buffer to dst-ptr
