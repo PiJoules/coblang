@@ -23,6 +23,7 @@ jobs:
         sudo ./llvm.sh 16
         wget https://github.com/google/googletest/releases/download/v1.16.0/googletest-1.16.0.tar.gz
         tar -xf googletest-1.16.0.tar.gz
+        pip install lit
     - name: Build gtest
       run: |
         cd googletest-1.16.0
@@ -35,4 +36,4 @@ jobs:
         CXX=clang++-16 LLVM_CONFIG=llvm-config-16 bash -x build.sh
     - name: Test
       run: |
-        CC=clang-16 bash -x run-tests.sh
+        FILECHECK=FileCheck-16 CC=clang-16 bash -x run-tests.sh

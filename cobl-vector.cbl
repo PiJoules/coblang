@@ -90,10 +90,23 @@
 
          goback.
 
+       entry "vector-clear" using local-vector.
+         move 0 to vector-size in local-vector.
+         goback.
+
        entry "vector-at" using local-vector idx-arg ptr-return.
          perform compute-allocation-size.
          move vector-data in local-vector to ptr-return.
          compute size-bytes = allocation-size-bytes * idx-arg.
+         set ptr-return up by size-bytes.
+         goback.
+
+       entry "vector-back" using local-vector ptr-return.
+         perform compute-allocation-size.
+         move vector-data in local-vector to ptr-return.
+         compute size-bytes =
+           allocation-size-bytes *
+           (vector-size in local-vector - 1).
          set ptr-return up by size-bytes.
          goback.
 

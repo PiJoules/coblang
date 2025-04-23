@@ -21,3 +21,11 @@
            move 'N' to bool-return
          end-if.
          goback.
+
+       entry "cobl-isdigit" using bool-return char-arg.
+         if char-arg is numeric
+           move 'Y' to bool-return
+         else
+           move 'N' to bool-return
+         end-if.
+         goback.

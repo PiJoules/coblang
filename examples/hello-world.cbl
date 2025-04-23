@@ -1,0 +1,5 @@
+       IDENTIFICATION DIVISION.
+         PROGRAM-ID. EXTERNAL.
+       PROCEDURE DIVISION.
+         DISPLAY 'Hello world'.
+         EXIT PROGRAM.

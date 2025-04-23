@@ -94,7 +94,7 @@
       *
       * Skip whitespace.
       *
-       skip-whitespace.
+       skip-whitespace-and-comments.
          perform forever
            perform do-peek-char
            if lexer-eof in local-lexer = 'Y'
@@ -106,9 +106,18 @@
              exit paragraph
            end-if
 
+           if peek-char = "*"
+      * Read until newline (0x0A).
+             perform do-get-char
+             perform until get-char = x"0A"
+               perform do-get-char
+             end-perform
+             exit perform cycle
+           end-if
+
            perform do-get-char
          end-perform.
-       end-skip-whitespace.
+       end-skip-whitespace-and-comments.
 
       * Lex one string into `token-string`.
        entry "lexer-lex" using local-lexer token-string.
@@ -118,7 +127,7 @@
            goback.
 
          perform forever
-           perform skip-whitespace
+           perform skip-whitespace-and-comments
            if lexer-eof in local-lexer = 'Y'
              goback
            end-if
@@ -138,7 +147,9 @@
          end-perform.
 
       * Parse a period.
-         if read-char = "."
+         if read-char = "." or
+            read-char = "(" or
+            read-char = ")"
            goback.
 
       * Parse a string literal.

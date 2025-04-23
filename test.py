@@ -7,7 +7,7 @@ from pathlib import Path
 
 BUILD_DIR = Path("build")
 STAGE1_BIN = BUILD_DIR / "coblang"
-TEST_DIR = Path("tests")
+EXAMPLES_DIR = Path("examples")
 
 
 class TestCompiler:
@@ -31,7 +31,13 @@ class TestCompiler:
         return res.stdout.decode("utf-8")
 
     def test_hello_world(self):
-        self.assertEqual(self.invoke(TEST_DIR / "hello-world.cbl"), "Hello world\n")
+        self.assertEqual(self.invoke(EXAMPLES_DIR / "hello-world.cbl"), "Hello world\n")
+
+    def test_hello_world_working_storage(self):
+        self.assertEqual(
+            self.invoke(EXAMPLES_DIR / "hello-world-working-storage.cbl"),
+            "Hello world    \n",
+        )
 
 
 class TestStage1Compiler(unittest.TestCase, TestCompiler):

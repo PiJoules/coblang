@@ -38,6 +38,7 @@
            01 str-data usage pointer.
            01 char pic x.
            01 newcap-arg usage binary-c-long unsigned.
+           01 newsize-arg usage binary-c-long unsigned.
 
            01 pic-ptr usage pointer.
            01 pic-length usage index.
@@ -292,9 +293,19 @@
          goback.
 
       *
+      * Resize a string to `newsize-arg`, appending `char` if the new size
+      * is greater than the current size.
+      *
+       entry "string-resize" using local-string newsize-arg char.
+         perform string-push-back until
+                 cobl-string-length in local-string >= newsize-arg.
+         goback.
+
+      *
       * Append a char to the end of the string.
       *
        entry "string-push-back" using local-string char.
+       string-push-back.
          if cobl-string-length in local-string >=
             cobl-string-capacity in local-string
       * Need to resize.
@@ -312,6 +323,7 @@
          set address of src-char-buffer to src-ptr.
          move x"00" to src-char-buffer.
 
+       end-string-push-back.
          goback.
 
        entry "string-compare-c-string" using local-string c-string-arg
