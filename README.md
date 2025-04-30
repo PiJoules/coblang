@@ -7,8 +7,7 @@ No one should use this.
 ## Deps 
 
 - [LLVM v16.0.6](https://github.com/llvm/llvm-project/releases/tag/llvmorg-16.0.6)
-- [GnuCOBOL v11.2.0](https://gnucobol.sourceforge.io/doc/gnucobol.html)
-  - `apt-get install gnucobol`
+- [GnuCOBOL v3.2.0](https://sourceforge.net/projects/gnucobol/files/gnucobol/3.2/gnucobol-3.2_bin.tar.xz/download)
 - [GoogleTest v1.16.0](https://github.com/google/googletest/releases/tag/v1.16.0)
 
 ## Build

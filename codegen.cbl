@@ -17,44 +17,20 @@
            01 token-string.
              copy "cobl-string.cpy".
            01 parsed-identifier.
-      * FIXME: See bug 1 in COBC-BUGS.md.
-      *       copy "cobl-string.cpy".
-              49 cobl-string-ptr usage pointer.
-              49 cobl-string-length usage binary-c-long unsigned.
-              49 cobl-string-capacity usage binary-c-long unsigned.
+             copy "cobl-string.cpy".
            01 parsed-integer.
-      * FIXME: See bug 1 in COBC-BUGS.md.
-      *       copy "cobl-string.cpy".
-              49 cobl-string-ptr usage pointer.
-              49 cobl-string-length usage binary-c-long unsigned.
-              49 cobl-string-capacity usage binary-c-long unsigned.
+             copy "cobl-string.cpy".
 
       * A parsed pic type is a pair of vectors. The first vector contains
       * the actual symbols. The second vector contains the number of each
       * symbol.
-      *
-      * FIXME: See bug 1 in COBC-BUGS.md.
            01 parsed-pic-type.
               02 symbols.
-      *           copy "cobl-vector.cpy".
-                 49 vector-data usage pointer.
-                 49 vector-size usage binary-c-long unsigned.
-                 49 vector-capacity usage binary-c-long unsigned.
-                 49 vector-elem-size usage binary-c-long unsigned.
-                 49 vector-elem-align usage binary-c-long unsigned.
+                 copy "cobl-vector.cpy".
               02 sizes.
-      *           copy "cobl-vector.cpy".
-                 49 vector-data usage pointer.
-                 49 vector-size usage binary-c-long unsigned.
-                 49 vector-capacity usage binary-c-long unsigned.
-                 49 vector-elem-size usage binary-c-long unsigned.
-                 49 vector-elem-align usage binary-c-long unsigned.
+                 copy "cobl-vector.cpy".
            01 parsed-pic-value.
-      * FIXME: See bug 1 in COBC-BUGS.md.
-      *       copy "cobl-string.cpy".
-              49 cobl-string-ptr usage pointer.
-              49 cobl-string-length usage binary-c-long unsigned.
-              49 cobl-string-capacity usage binary-c-long unsigned.
+              copy "cobl-string.cpy".
 
            01 llvm-error usage pointer.
            01 llvm-triple usage pointer.
@@ -104,13 +80,7 @@
               copy "cobl-vector.cpy".
 
            01 tmp-vector.
-      * FIXME: See bug 1 in COBC-BUGS.md.
-      *        copy "cobl-vector.cpy".
-              49 vector-data usage pointer.
-              49 vector-size usage binary-c-long unsigned.
-              49 vector-capacity usage binary-c-long unsigned.
-              49 vector-elem-size usage binary-c-long unsigned.
-              49 vector-elem-align usage binary-c-long unsigned.
+              copy "cobl-vector.cpy".
 
            01 pointer-size usage binary-c-long unsigned
               value length of pointer.

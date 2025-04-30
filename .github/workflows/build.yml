@@ -17,13 +17,17 @@ jobs:
     - name: apt-get dependencies
       run: |
         sudo apt-get update
-        sudo apt-get -y install wget cmake gnucobol
+        sudo apt-get -y install wget cmake libcjson-dev
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         sudo ./llvm.sh 16
         wget https://github.com/google/googletest/releases/download/v1.16.0/googletest-1.16.0.tar.gz
         tar -xf googletest-1.16.0.tar.gz
         pip install lit
+
+        # Use 3.2 because 3.1.2 leads to an internal compiler error.
+        wget -O gnucobol-3.2_bin.tar.xz https://sourceforge.net/projects/gnucobol/files/gnucobol/3.2/gnucobol-3.2_bin.tar.xz/download
+        tar -xf gnucobol-3.2_bin.tar.xz
     - name: Build gtest
       run: |
         cd googletest-1.16.0
@@ -33,7 +37,9 @@ jobs:
       run: |
         GTEST_HDRS=${{ github.workspace }}/googletest-1.16.0/googletest/include/ \
         GTEST_LIBS=${{ github.workspace }}/googletest-1.16.0/lib/ \
+        COBC=${{ github.workspace }}/gnucobol-3.2_bin/usr/local/bin/cobc \
         CXX=clang++-16 LLVM_CONFIG=llvm-config-16 bash -x build.sh
     - name: Test
       run: |
+        COBC=${{ github.workspace }}/gnucobol-3.2_bin/usr/local/bin/cobc \
         FILECHECK=FileCheck-16 CC=clang-16 bash -x run-tests.sh

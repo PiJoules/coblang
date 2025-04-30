@@ -1,5 +1,7 @@
 set -e
 
+source setup-env.sh
+
 # Run cobl-* unittests.
 export COB_LIBRARY_PATH=build
 export COB_PRE_LOAD="cobl-memcpy:cobl-string:cobl-vector"

@@ -31,7 +31,9 @@
            01 pic-buffer pic x(1024).
            78 pic-buffer-size value length of pic-buffer.
 
-           01 default-output-file-name pic x(100) value "out.obj".
+           01 default-output-file-name pic x(1024) value "out.obj".
+           01 tmp-unsigned-long usage binary-c-long unsigned.
+           01 tmp-ptr usage pointer.
 
        PROCEDURE DIVISION.
          call "CBL_GC_HOSTED" using argc "argc".
@@ -46,19 +48,22 @@
          set argv up by function byte-length(arg).
          move 1 to idx.
 
+         move function length(
+                function trim(default-output-file-name TRAILING))
+              to tmp-unsigned-long.
          call "string-construct-from-pic-str" using
               output-file
               default-output-file-name
-              function length(
-                function trim(default-output-file-name TRAILING)).
+              tmp-unsigned-long.
 
          perform until idx >= argc
            set address of arg to argv
            call "string-construct-from-c-str" using tmp-string arg
 
+           move address of pic-buffer to tmp-ptr
            call "string-copy-to-pic" using
                 tmp-string
-                address of pic-buffer
+                tmp-ptr
                 pic-buffer-size
 
            evaluate pic-buffer
