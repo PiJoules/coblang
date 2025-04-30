@@ -32,6 +32,8 @@
            01 get-char pic x.
            01 starting-quote-char pic x.
 
+           01 tmp-ptr usage pointer.
+
          LINKAGE SECTION.
            01 local-lexer.
               copy "lexer.cpy".
@@ -46,9 +48,10 @@
        entry "lexer-construct" using local-lexer
                                      local-string.
          set filename-buffer-size to length of filename-buffer.
+         set tmp-ptr to address of filename-buffer.
          call "string-copy-to-pic" using
             local-string
-            address of filename-buffer
+            tmp-ptr
             filename-buffer-size.
 
          open input lexer-file.

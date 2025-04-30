@@ -15,9 +15,7 @@ if ! test -d ${MAYBE_COBC_CONFIG_DIR}; then
   export COB_CONFIG_DIR=${COBC_ROOT_DIR}/share/gnucobol/config
 fi
 
-#COBL_FLAGS="-g --debug -Wall -Werror -I${SRCDIR} -fstatic-call"
-# TODO: Re-enable --debug
-COBL_FLAGS="-g -Wall -Werror -I${SRCDIR} -fstatic-call"
+COBL_FLAGS="-g --debug -Wall -Werror -I${SRCDIR} -fstatic-call"
 COBL_FLAGS="${COBL_FLAGS} -I${COBC_INCLUDE_DIR}"
 
 LLVM_CONFIG=${LLVM_CONFIG:-llvm-config}

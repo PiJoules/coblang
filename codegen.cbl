@@ -345,9 +345,10 @@
          else
            call "string-clear" using token-string
            call "lexer-lex" using this-codegen-lexer token-string
+           set tmp-ptr to address of pic-buffer
            call "string-copy-to-pic" using
                 token-string
-                address of pic-buffer
+                tmp-ptr
                 pic-buffer-size
          end-if.
        end-get-token-string-and-buffer.
@@ -356,9 +357,10 @@
          if has-lookahead in this-codegen = 'N'
            call "string-clear" using token-string
            call "lexer-lex" using this-codegen-lexer token-string
+           set tmp-ptr to address of pic-buffer
            call "string-copy-to-pic" using
                 token-string
-                address of pic-buffer
+                tmp-ptr
                 pic-buffer-size
            move 'Y' to has-lookahead in this-codegen
          end-if.

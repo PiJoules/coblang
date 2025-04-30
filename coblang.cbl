@@ -84,11 +84,12 @@
 
          call "lexer-construct" using
               coblang-lexer
-              cobl-string-ptr in input-file.
+              input-file.
 
+         set tmp-ptr to address of coblang-lexer.
          call "codegen-construct" using
               coblang-codegen
-              address of coblang-lexer.
+              tmp-ptr.
         
          call "codegen-run" using coblang-codegen.
 
