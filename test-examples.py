@@ -54,6 +54,16 @@ class TestCompiler:
             "Hello world    \n",
         )
 
+    def test_hello_world_local_storage(self):
+        self.assertEqual(
+            self.invoke(
+                [
+                    (EXAMPLES_DIR / "hello-world-local-storage.cbl", ["-x"]),
+                ]
+            ),
+            "Hello world    \n",
+        )
+
     def test_calls(self):
         self.assertEqual(
             self.invoke(

@@ -1,10 +1,8 @@
       * RUN: coblang %s 2>&1 | FileCheck %s
 
-      * CHECK: @hello-world-str = global [16 x i8] c"Hello world    \00"
-      * CHECK: [[FORMAT:@.*]] = private unnamed_addr constant [3 x i8]
-      * CHECK-SAME:             c"%s\00", align 1
-      * CHECK: [[NEWLINE:@.*]] = private unnamed_addr constant [2 x i8]
-      * CHECK-SAME:             c"\0A\00", align 1
+      * CHECK-DAG: @hello-world-str = global [16 x i8] c"Hello world    \00"
+      * CHECK-DAG: [[NEWLINE:@.*]] = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+      * CHECK-DAG: [[FORMAT:@.*]] = private unnamed_addr constant [3 x i8] c"%s\00", align 1
 
       * CHECK: define internal void @module-program
       * CHECK:      call i32 (ptr, ...) @printf(ptr [[FORMAT]], ptr @hello-world-str)

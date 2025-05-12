@@ -36,6 +36,7 @@
                  copy "cobl-vector.cpy".
            01 parsed-pic-value.
               copy "cobl-string.cpy".
+           01 did-parse-pic-value pic x.
 
            01 llvm-error usage pointer.
            01 llvm-triple usage pointer.
@@ -172,6 +173,8 @@
            01 paragraph-block-addr-ret usage pointer.
            01 current-indirect-br usage pointer.
            01 num-entries usage binary-c-long unsigned.
+           01 default-value usage pointer.
+           01 alloca-ptr usage pointer.
 
            01 tmp-string.
               copy "cobl-string.cpy".
@@ -194,18 +197,20 @@
               02 callee-args-num-alloca-args usage pointer.
               02 callee-args-ret-ptr usage pointer.
            01 callee-args-gep usage pointer.
+           01 printf-args occurs 2 times usage pointer.
 
       * This is a map of C strings to global pointers for linkage-section
-      * variables.
+      * variables. Note these store pointers to the pointers to the actual
+      * data which is passed through arguments.
            01 linkage-section-vars.
               copy "cobl-tree-map-node.cpy".
            01 linkage-section-var-types.
               copy "cobl-tree-map-node.cpy".
+      * This is a map of C strings to allocas for local storage variables.
+           01 local-storage-vars.
+              copy "cobl-tree-map-node.cpy".
       * This is a map of C strings to basic blocks for paragraphs.
            01 paragraph-bbs.
-              copy "cobl-tree-map-node.cpy".
-      * This is a map of C strings to internal functions for paragraphs.
-           01 paragraph-funcs.
               copy "cobl-tree-map-node.cpy".
 
            01 bb-entry-ptr usage pointer.
@@ -398,8 +403,7 @@
               linkage-section-var-types.
          call "string-tree-map-construct" using
               paragraph-bbs.
-         call "string-tree-map-construct" using
-              paragraph-funcs.
+         call "string-tree-map-construct" using local-storage-vars.
 
          perform insert-program-func.
 
@@ -412,6 +416,12 @@
          call "LLVMPositionBuilderAtEnd" using
               by value builder-ptr
               by value bb-entry-ptr.
+
+         call "LLVMBuildGlobalStringPtr" using
+              by value builder-ptr
+              by content function concatenate("%s", x"00")
+              by content x"00"
+              returning LLVMStringFormatSpecifier.
 
          set address of this-codegen-lexer to lexer-ptr in this-codegen.
 
@@ -610,7 +620,7 @@
          call "tree-map-destroy" using linkage-section-vars.
          call "tree-map-destroy" using linkage-section-var-types.
          call "tree-map-destroy" using paragraph-bbs.
-         call "tree-map-destroy" using paragraph-funcs.
+         call "tree-map-destroy" using local-storage-vars.
          goback.
 
       *
@@ -806,6 +816,11 @@
              perform pop-section
              perform pop-period
              perform parse-working-storage-variables
+           else if pic-buffer = "LOCAL-STORAGE"
+             perform get-token-string-and-buffer
+             perform pop-section
+             perform pop-period
+             perform parse-local-storage-variables
            else if pic-buffer = "LINKAGE"
              perform get-token-string-and-buffer
              perform pop-section
@@ -827,7 +842,7 @@
            perform parse-level
            perform parse-identifier
            perform pop-pic
-           perform parse-pic-type
+           perform parse-pic-type-and-optional-val
            perform pop-period
 
            perform get-parsed-pic-size
@@ -862,6 +877,65 @@
          end-perform.
        end-parse-linkage-variables.
 
+       parse-local-storage-variables.
+         perform forever
+           perform peek-token-string-and-buffer
+           if function trim(pic-buffer TRAILING) is not numeric
+             exit perform
+           end-if
+
+           perform parse-level
+           perform parse-identifier
+           perform pop-pic
+           perform parse-pic-type-and-optional-val
+           perform pop-period
+
+           perform get-parsed-pic-size
+      * Increment by 1 because we always append the null terminator.
+           set tmp-unsigned-long up by 1
+           call "LLVMArrayType" using
+                by value LLVMInt8Type
+                by value tmp-unsigned-long
+                returning llvm-type-res
+
+           call "LLVMBuildAlloca" using
+                by value builder-ptr
+                by value llvm-type-res
+                by value cobl-string-ptr in parsed-identifier
+                returning alloca-ptr
+
+           call "tree-map-set" using local-storage-vars
+                cobl-string-ptr in parsed-identifier
+                alloca-ptr
+
+           if did-parse-pic-value = 'Y'
+             perform get-parsed-pic-size
+             call "string-resize" using parsed-pic-value
+                  tmp-unsigned-long ' '
+
+             call "LLVMConstInt" using
+                  by value LLVMInt32Type
+                  by value cobl-string-length in parsed-pic-value
+                  by value 0
+                  returning llvm-value-res2
+
+             call "LLVMBuildGlobalStringPtr" using
+                  by value builder-ptr
+                  by value cobl-string-ptr in parsed-pic-value
+                  by content x"00"
+                  returning default-value
+
+             call "LLVMBuildMemCpy" using
+                  by value builder-ptr
+                  by value alloca-ptr
+                  by value 0
+                  by value default-value
+                  by value 0
+                  by value llvm-value-res2
+           end-if
+         end-perform.
+       end-parse-local-storage-variables.
+
        parse-working-storage-variables.
          perform forever
            perform peek-token-string-and-buffer
@@ -872,7 +946,7 @@
            perform parse-level
            perform parse-identifier
            perform pop-pic
-           perform parse-pic-type
+           perform parse-pic-type-and-optional-val
            perform pop-period
 
            perform get-parsed-pic-size
@@ -920,11 +994,13 @@
          end-perform.
        end-get-parsed-pic-size.
 
-       parse-pic-type.
+       parse-pic-type-and-optional-val.
          perform get-token-string-and-buffer.
 
          call "vector-clear" using symbols in parsed-pic-type.
          call "vector-clear" using sizes in parsed-pic-type.
+
+         move 'N' to did-parse-pic-value.
 
          if pic-buffer = "X"
            call "vector-append-storage" using
@@ -996,9 +1072,10 @@
              move tmp-string to token-string
            end-if
            call "string-copy" using parsed-pic-value token-string
+           move 'Y' to did-parse-pic-value
          end-if.
          
-       end-parse-pic-type.
+       end-parse-pic-type-and-optional-val.
 
       * Gets a token and copies it into `parsed-integer`.
        parse-integer.
@@ -1382,15 +1459,19 @@
          move tmp-unsigned-long-long to tmp-unsigned-long.
        end-get-size-of-global.
 
-      * Parse an expression and store it in llvm-value-res.
+      * Parse an expression and store it in `llvm-value-res`.
       *
       * If the expression is an identifier to a linkage section global,
       * this sets `is-linkage-section-global` to `Y` and the `token-string`
       * will contain that global's identifier. Otherwise, `N`.
+      *
+      * TODO: This paragraph should be able to handle a linkage-section
+      * variable which does the double load.
        get-expression.
          perform get-token-string-and-buffer.
          move 'N' to is-linkage-section-global.
 
+      * First check if it is a string literal.
          call "string-front" using token-string tmp-char.
          if tmp-char = '"' or tmp-char = "'"
            move token-string to tmp-string
@@ -1398,6 +1479,18 @@
            exit paragraph
          end-if.
 
+      * Next check if it is in local-storage.
+        call "tree-map-get" using
+             local-storage-vars
+             cobl-string-ptr in token-string
+             tmp-ptr tmp-bool.
+
+        if tmp-bool = 'Y'
+          move tmp-ptr to llvm-value-res
+          exit paragraph
+        end-if.
+
+      * Last check if this is a global.
          call "LLVMGetNamedGlobal" using
               by value llvm-module in this-codegen
               by value cobl-string-ptr in token-string
@@ -1694,51 +1787,19 @@
 
       * We parsed and popped a DISPLAY token. Spin up a printf.
        handle-display.
-         perform get-token-string-and-buffer.
+         move LLVMStringFormatSpecifier to printf-args(1).
 
-         move 0 to tmp-unsigned-long.
-         call "string-at" using token-string tmp-unsigned-long tmp-char.
-         if tmp-char = '"' or tmp-char = "'"
-           move token-string to tmp-string
-           perform get-llvm-string-from-string-literal
-         
-           perform get-printf-func
-           call "LLVMBuildCall2" using
-                by value builder-ptr
-                by value printf-func-type-ptr
-                by value printf-func-ptr
-                by value address of llvm-value-res
-                by value 1
-                by content x"00"
-         else
-      * This must be an identifier.
-      * TODO: The format specifier should change depending on the type.
-           move token-string to tmp-string
-           perform get-named-global
+         perform get-expression.
+         move llvm-value-res to printf-args(2).
 
-           perform get-string-format-specifier
-           call "vector-construct" using
-                tmp-vector pointer-size pointer-align
-
-           call "vector-append-storage" using tmp-vector tmp-ptr
-           set address of tmp-ptr-storage to tmp-ptr
-           move LLVMStringFormatSpecifier to tmp-ptr-storage
-
-           call "vector-append-storage" using tmp-vector tmp-ptr
-           set address of tmp-ptr-storage to tmp-ptr
-           move llvm-value-res to tmp-ptr-storage
-           
-           perform get-printf-func
-           call "LLVMBuildCall2" using
-                by value builder-ptr
-                by value printf-func-type-ptr
-                by value printf-func-ptr
-                by value vector-data in tmp-vector
-                by value 2
-                by content x"00"
-
-           call "vector-destroy" using tmp-vector
-         end-if.
+         perform get-printf-func.
+         call "LLVMBuildCall2" using
+              by value builder-ptr
+              by value printf-func-type-ptr
+              by value printf-func-ptr
+              by value address of printf-args(1)
+              by value 2
+              by content x"00".
 
          perform emit-print-newline.
        end-handle-display.
@@ -1823,14 +1884,6 @@
               by content x"00"
               returning LLVMNewlineGlobalString.
        end-get-newline-global-string.
-
-       get-string-format-specifier.
-         call "LLVMBuildGlobalStringPtr" using
-              by value builder-ptr
-              by content function concatenate("%s", x"00")
-              by content x"00"
-              returning LLVMStringFormatSpecifier.
-       end-string-format-specifier.
 
        emit-print-newline.
          perform get-printf-func.
