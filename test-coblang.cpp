@@ -322,4 +322,183 @@ TEST_F(CoblTest, VectorAppendStorage) {
   vector_destroy(&v);
 }
 
+void tree_map_construct(CoblTreeMap *m, TreeMapCmp *cmp, KeyCtor *ctor,
+                        KeyDtor *dtor) {
+  void *cob_argv[] = {m, &cmp, &ctor, &dtor};
+  cob_call("tree-map-construct", 4, cob_argv);
+}
+
+void string_tree_map_construct(CoblTreeMap *m) {
+  void *cob_argv[] = {m};
+  cob_call("string-tree-map-construct", 1, cob_argv);
+}
+
+void tree_map_destroy(CoblTreeMap *m) {
+  void *cob_argv[] = {m};
+  cob_call("tree-map-destroy", 1, cob_argv);
+}
+
+void *tree_map_left(CoblTreeMap *m) {
+  void *ret;
+  void *cob_argv[] = {m, &ret};
+  cob_call("tree-map-left", 2, cob_argv);
+  return ret;
+}
+
+void *tree_map_right(CoblTreeMap *m) {
+  void *ret;
+  void *cob_argv[] = {m, &ret};
+  cob_call("tree-map-right", 2, cob_argv);
+  return ret;
+}
+
+void *tree_map_key(CoblTreeMap *m) {
+  void *ret;
+  void *cob_argv[] = {m, &ret};
+  cob_call("tree-map-key", 2, cob_argv);
+  return ret;
+}
+
+void *tree_map_value(CoblTreeMap *m) {
+  void *ret;
+  void *cob_argv[] = {m, &ret};
+  cob_call("tree-map-value", 2, cob_argv);
+  return ret;
+}
+
+void tree_map_set(CoblTreeMap *m, const void *key, const void *val) {
+  void *cob_argv[] = {m, &key, &val};
+  cob_call("tree-map-set", 3, cob_argv);
+}
+
+bool tree_map_get(CoblTreeMap *m, const void *key, void **val) {
+  char ret;
+  void *cob_argv[] = {m, &key, val, &ret};
+  cob_call("tree-map-get", 4, cob_argv);
+  return ret == 'Y';
+}
+
+void tree_map_clear(CoblTreeMap *m) {
+  void *cob_argv[] = {m};
+  cob_call("tree-map-clear", 1, cob_argv);
+}
+
+void tree_map_clone(CoblTreeMap *dst, CoblTreeMap *src) {
+  void *cob_argv[] = {dst, src};
+  cob_call("tree-map-clone", 2, cob_argv);
+}
+
+TEST_F(CoblTest, TreeMapConstruction) {
+  CoblTreeMap m;
+  tree_map_construct(&m, nullptr, nullptr, nullptr);
+  ASSERT_EQ(tree_map_left(&m), nullptr);
+  ASSERT_EQ(tree_map_right(&m), nullptr);
+  ASSERT_EQ(tree_map_key(&m), nullptr);
+  ASSERT_EQ(tree_map_value(&m), nullptr);
+  tree_map_destroy(&m);
+}
+
+TEST_F(CoblTest, StringTreeMapConstruction) {
+  CoblTreeMap m;
+  string_tree_map_construct(&m);
+  ASSERT_EQ(tree_map_left(&m), nullptr);
+  ASSERT_EQ(tree_map_right(&m), nullptr);
+  ASSERT_EQ(tree_map_key(&m), nullptr);
+  ASSERT_EQ(tree_map_value(&m), nullptr);
+  tree_map_destroy(&m);
+}
+
+TEST_F(CoblTest, TreeMapInsertion) {
+  CoblTreeMap m;
+  string_tree_map_construct(&m);
+
+  void *res;
+  ASSERT_FALSE(tree_map_get(&m, "key", &res));
+
+  const char *val = "val";
+  tree_map_set(&m, "key", val);
+
+  ASSERT_TRUE(tree_map_get(&m, "key", &res));
+  ASSERT_EQ(res, val);
+
+  const char *val2 = "val2";
+  tree_map_set(&m, "key2", val2);
+
+  ASSERT_TRUE(tree_map_get(&m, "key2", &res));
+  ASSERT_EQ(res, val2);
+  ASSERT_TRUE(tree_map_get(&m, "key", &res));
+  ASSERT_EQ(res, val);
+
+  tree_map_destroy(&m);
+}
+
+TEST_F(CoblTest, TreeMapOverrideKeyValue) {
+  CoblTreeMap m;
+  string_tree_map_construct(&m);
+
+  const char *val = "val";
+  tree_map_set(&m, "key", val);
+
+  void *res;
+  ASSERT_TRUE(tree_map_get(&m, "key", &res));
+  ASSERT_EQ(res, val);
+
+  const char *newval = "newval";
+  tree_map_set(&m, "key", newval);
+
+  ASSERT_TRUE(tree_map_get(&m, "key", &res));
+  ASSERT_EQ(res, newval);
+
+  tree_map_destroy(&m);
+}
+
+TEST_F(CoblTest, TreeMapClone) {
+  CoblTreeMap m;
+  string_tree_map_construct(&m);
+
+  const char *val = "val";
+  tree_map_set(&m, "key", val);
+
+  tree_map_clear(&m);
+  ASSERT_EQ(tree_map_left(&m), nullptr);
+  ASSERT_EQ(tree_map_right(&m), nullptr);
+  ASSERT_EQ(tree_map_key(&m), nullptr);
+
+  CoblTreeMap m2;
+  string_tree_map_construct(&m2);
+  tree_map_set(&m2, "key", val);
+  const char *val2 = "val2";
+  tree_map_set(&m2, "key2", (char *)val2);
+
+  tree_map_clone(&m, &m2);
+  ASSERT_STREQ((const char *)tree_map_key(&m), "key");
+  ASSERT_STREQ((const char *)tree_map_key(&m2), "key");
+
+  void *res;
+  ASSERT_TRUE(tree_map_get(&m, "key", &res));
+  ASSERT_STREQ((const char *)res, val);
+  ASSERT_TRUE(tree_map_get(&m2, "key", &res));
+  ASSERT_STREQ((const char *)res, val);
+  ASSERT_TRUE(tree_map_get(&m, "key2", &res));
+  ASSERT_STREQ((const char *)res, val2);
+  ASSERT_TRUE(tree_map_get(&m2, "key2", &res));
+  ASSERT_STREQ((const char *)res, val2);
+
+  tree_map_destroy(&m);
+  tree_map_destroy(&m2);
+}
+
+TEST_F(CoblTest, TreeMapCloneEmpty) {
+  CoblTreeMap m, m2;
+  string_tree_map_construct(&m);
+  string_tree_map_construct(&m2);
+
+  tree_map_clone(&m, &m2);
+  ASSERT_EQ(tree_map_key(&m), nullptr);
+  ASSERT_EQ(tree_map_key(&m2), nullptr);
+
+  tree_map_destroy(&m);
+  tree_map_destroy(&m2);
+}
+
 }  // namespace

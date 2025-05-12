@@ -38,7 +38,7 @@ jobs:
         GTEST_HDRS=${{ github.workspace }}/googletest-1.16.0/googletest/include/ \
         GTEST_LIBS=${{ github.workspace }}/googletest-1.16.0/lib/ \
         COBC=${{ github.workspace }}/gnucobol-3.2_bin/usr/local/bin/cobc \
-        CXX=clang++-16 LLVM_CONFIG=llvm-config-16 bash -x build.sh
+        CC=clang-16 CXX=clang++-16 LLVM_CONFIG=llvm-config-16 bash -x build.sh
     - name: Test
       run: |
         COBC=${{ github.workspace }}/gnucobol-3.2_bin/usr/local/bin/cobc \

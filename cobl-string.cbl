@@ -159,12 +159,14 @@
        entry "string-destroy" using local-string.
        string-destroy.
          if cobl-string-ptr in local-string not = null
-           free cobl-string-ptr in local-string.
+           free cobl-string-ptr in local-string
+           move null to cobl-string-ptr in local-string
+         end-if.
        end-string-destroy.
          goback.
 
       *
-      * Copy the contents of one string into another.
+      * Copy the contents of the other-string into the local-string.
       *
        entry "string-copy" using local-string other-string.
       * TODO: Implement this more efficiently.
@@ -246,6 +248,12 @@
          move cobl-string-ptr in local-string to str-data.
          goback.
 
+       entry "string-front" using local-string char-return.
+         set address of src-char-buffer to
+             cobl-string-ptr in local-string.
+         move src-char-buffer to char-return.
+         goback.
+
        entry "string-at" using local-string idx-arg char-return.
          move cobl-string-ptr in local-string to src-ptr.
          set src-ptr up by idx-arg.
@@ -256,16 +264,15 @@
        entry "string-reserve" using local-string newcap-arg.
          move newcap-arg to newcap.
        string-reserve.
-         if cobl-string-capacity in local-string >= newcap
-           goback.
-
-         allocate newcap characters returning dst-ptr.
-         call "cobl-memcpy" using dst-ptr
-                                  cobl-string-ptr in local-string
-                                  cobl-string-length in local-string.
-         free cobl-string-ptr in local-string.
-         move dst-ptr to cobl-string-ptr in local-string.
-         move newcap to cobl-string-capacity in local-string.
+         if cobl-string-capacity in local-string < newcap
+           allocate newcap characters returning dst-ptr
+           call "cobl-memcpy" using dst-ptr
+                                    cobl-string-ptr in local-string
+                                    cobl-string-length in local-string
+           free cobl-string-ptr in local-string
+           move dst-ptr to cobl-string-ptr in local-string
+           move newcap to cobl-string-capacity in local-string
+         end-if.
        end-string-reserve.
          goback.
 
@@ -306,12 +313,13 @@
       *
        entry "string-push-back" using local-string char.
        string-push-back.
-         if cobl-string-length in local-string >=
-            cobl-string-capacity in local-string
-      * Need to resize.
+      * May need to resize.
+      * +1 needed for null terminator and +1 needed for the new character..
+         perform until cobl-string-capacity in local-string >=
+                       cobl-string-length in local-string + 2
            compute newcap = cobl-string-capacity in local-string * 2
            perform string-reserve
-         end-if.
+         end-perform.
 
          move cobl-string-ptr in local-string to src-ptr.
          set src-ptr up by cobl-string-length in local-string.

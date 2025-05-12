@@ -34,6 +34,8 @@
            01 default-output-file-name pic x(1024) value "out.obj".
            01 tmp-unsigned-long usage binary-c-long unsigned.
            01 tmp-ptr usage pointer.
+           01 add-main pic x value 'N'.
+           01 found-input-file pic x value 'N'.
 
        PROCEDURE DIVISION.
          call "CBL_GC_HOSTED" using argc "argc".
@@ -69,8 +71,20 @@
            evaluate pic-buffer
              when "-o"
                perform handle-output-flag
+             when "-x"
+               perform handle-main-flag
              when other
-               call "string-construct-move" using input-file tmp-string
+               if found-input-file = 'N'
+                 call "string-construct-move"
+                      using input-file tmp-string
+                 move 'Y' to found-input-file
+               else
+                 display "error: found more than one input file '"
+                         no advancing
+                 call "string-display" using tmp-string 'N'
+                 display "'"
+                 stop run
+               end-if
            end-evaluate
 
            call "string-destroy" using tmp-string
@@ -89,9 +103,10 @@
          set tmp-ptr to address of coblang-lexer.
          call "codegen-construct" using
               coblang-codegen
-              tmp-ptr.
+              tmp-ptr
+              cobl-string-ptr in input-file.
         
-         call "codegen-run" using coblang-codegen.
+         call "codegen-run" using coblang-codegen add-main.
 
          display "writing to: " no advancing.
          call "string-display" using output-file 'Y'.
@@ -119,3 +134,7 @@
          call "string-destroy" using output-file.
          call "string-construct-from-c-str" using output-file arg.
        end-handle-output-flag.
+
+       handle-main-flag.
+         move 'Y' to add-main.
+       end-handle-main-flag.

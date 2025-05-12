@@ -5,9 +5,15 @@
       * CHECK: [[NEWLINE:@.*]] = private unnamed_addr constant
       * CHECK-SAME:              [2 x i8] c"\0A\00", align 1
       
-      * CHECK-LABEL: main
+      * CHECK: define internal void @module-program
       * CHECK:      call i32 (ptr, ...) @printf(ptr [[GLOB]])
       * CHECK-NEXT: call i32 (ptr, ...) @printf(ptr [[NEWLINE]])
+
+      * CHECK:      define void @HELLO-WORLD(ptr %0, i32 %1, ptr %2) {
+      * CHECK-NEXT: entry:
+      * CHECK-NEXT:   call void @module-program(i32 0)
+      * CHECK-NEXT:   ret void
+      * CHECK-NEXT: }
        IDENTIFICATION DIVISION.
          PROGRAM-ID. HELLO-WORLD.
        PROCEDURE DIVISION.

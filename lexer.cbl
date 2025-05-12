@@ -104,11 +104,6 @@
              exit paragraph
            end-if
 
-           call "cobl-isspace" using isspace peek-char
-           if isspace = 'N'
-             exit paragraph
-           end-if
-
            if peek-char = "*"
       * Read until newline (0x0A).
              perform do-get-char
@@ -116,6 +111,11 @@
                perform do-get-char
              end-perform
              exit perform cycle
+           end-if
+
+           call "cobl-isspace" using isspace peek-char
+           if isspace = 'N'
+             exit paragraph
            end-if
 
            perform do-get-char

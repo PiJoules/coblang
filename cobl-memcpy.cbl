@@ -1,11 +1,9 @@
        IDENTIFICATION DIVISION.
          PROGRAM-ID. cobl-memcpy.
        DATA DIVISION.
-         working-storage section.
+         local-storage section.
            01 src-char-buffer pic x based.
            01 dst-char-buffer pic x based.
-
-         local-storage section.
            01 local-src-ptr usage pointer.
            01 local-dst-ptr usage pointer.
            01 end-src-ptr usage pointer.
@@ -13,7 +11,7 @@
          LINKAGE SECTION.
            01 src-ptr usage pointer.
            01 dst-ptr usage pointer.
-           01 cpy-size usage index.
+           01 cpy-size usage binary-c-long unsigned.
 
       *
       * Effectively similar to memcpy.
