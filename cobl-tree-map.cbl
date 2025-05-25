@@ -5,12 +5,24 @@
        DATA DIVISION.
          working-storage section.
       * TODO: Can these be in local-storage? This leads to a heap-use-after
-      * free when placed in local-storage.
+      * free when placed in local-storage but only when invoked from the
+      * test-coblang.cpp tests. No errors occur when invoked from a normal
+      * cobol program.
            01 tree-map-storage based.
               copy "cobl-tree-map-node.cpy".
            01 tree-map-storage2 based.
               copy "cobl-tree-map-node.cpy".
            78 tree-map-size value length of tree-map-storage.
+
+           01 left-tree-cpy.
+              copy "cobl-tree-map-node.cpy".
+           01 right-tree-cpy.
+              copy "cobl-tree-map-node.cpy".
+           01 current-node based.
+              copy "cobl-tree-map-node.cpy".
+           01 parents-ptr-to-current-node usage pointer based.
+           01 node-storage based.
+              copy "cobl-tree-map-node.cpy".
 
          local-storage section.
            01 tmp-ptr usage pointer.
@@ -167,7 +179,7 @@
          end-if.
 
          call tree-map-key-cmp in local-tree-map using
-              tree-map-key in local-tree-map key-arg cmp-return.
+              key-arg tree-map-key in local-tree-map cmp-return.
          if cmp-return < 0
            if tree-map-left-node in local-tree-map = null
                allocate tree-map-size characters returning
@@ -213,6 +225,12 @@
          end-if.
          goback.
 
+       entry "tree-map-has" using local-tree-map key-arg
+             bool-return-arg.
+         call "tree-map-get" using local-tree-map key-arg tmp-ptr
+              bool-return-arg.
+         goback.
+
       * Get a value in the tree map given a key. If the key exists, `val-arg`
       * is set to the stored pointer value in the tree and `bool-return-arg`
       * is 'Y'. Otherwise, `bool-return-arg` is 'N'.
@@ -224,7 +242,7 @@
          end-if.
 
          call tree-map-key-cmp in local-tree-map using
-              tree-map-key in local-tree-map key-arg cmp-return.
+              key-arg tree-map-key in local-tree-map cmp-return.
          if cmp-return < 0
            if tree-map-left-node in local-tree-map = null
              move 'N' to bool-return-arg
@@ -249,6 +267,97 @@
            move tree-map-value in local-tree-map to val-arg
            move 'Y' to bool-return-arg
          end-if.
+
+         goback.
+
+       entry "tree-map-erase" using local-tree-map key-arg.
+         if tree-map-key in local-tree-map = null
+           display "abort: Empty map"
+           stop run
+         end-if.
+
+         set address of current-node to address of local-tree-map.
+         set address of parents-ptr-to-current-node to null.
+
+         perform forever
+           if address of current-node = null
+             display "abort: Unknown key " key-arg
+             stop run
+           end-if
+
+           call tree-map-key-cmp in current-node using
+                key-arg tree-map-key in current-node cmp-return
+
+           if cmp-return < 0
+             set address of parents-ptr-to-current-node to
+                 address of tree-map-left-node in current-node
+             set address of current-node to
+                 tree-map-left-node in current-node
+           else if cmp-return > 0
+             set address of parents-ptr-to-current-node to
+                 address of tree-map-right-node in current-node
+             set address of current-node to
+                 tree-map-right-node in current-node
+           else
+             exit perform
+           end-if
+         end-perform.
+
+      * FIXME: This is wildly inefficient, but it gets the job done.
+         call "tree-map-construct" using left-tree-cpy
+              tree-map-key-cmp in current-node
+              tree-map-key-ctor in current-node
+              tree-map-key-dtor in current-node.
+         call "tree-map-construct" using right-tree-cpy
+              tree-map-key-cmp in current-node
+              tree-map-key-ctor in current-node
+              tree-map-key-dtor in current-node.
+
+         if tree-map-left-node in current-node not = null
+           set address of node-storage to
+               tree-map-left-node in current-node
+           call "tree-map-clone" using left-tree-cpy node-storage
+         end-if.
+         if tree-map-right-node in current-node not = null
+           set address of node-storage to
+               tree-map-right-node in current-node
+           call "tree-map-clone" using right-tree-cpy node-storage
+         end-if.
+
+         if address of parents-ptr-to-current-node not = null
+           move null to parents-ptr-to-current-node
+         end-if.
+         call "tree-map-destroy" using current-node.
+         free address of current-node.
+
+         call "tree-map-add" using local-tree-map left-tree-cpy.
+         call "tree-map-add" using local-tree-map right-tree-cpy.
+
+         call "tree-map-destroy" using left-tree-cpy.
+         call "tree-map-destroy" using right-tree-cpy.
+
+         goback.
+
+      * Copy the contents of the `local-tree-map` into the `dst-tree-map`.
+       entry "tree-map-add" using dst-tree-map local-tree-map.
+         if tree-map-key in local-tree-map = null
+           goback.
+
+         if tree-map-left-node in local-tree-map not = null
+           set address of node-storage to
+               tree-map-left-node in local-tree-map
+           call "tree-map-add" using dst-tree-map node-storage
+         end-if.
+
+         if tree-map-right-node in local-tree-map not = null
+           set address of node-storage to
+               tree-map-right-node in local-tree-map
+           call "tree-map-add" using dst-tree-map node-storage
+         end-if.
+
+         call "tree-map-set" using dst-tree-map
+              tree-map-key in local-tree-map
+              tree-map-value in local-tree-map.
 
          goback.
 

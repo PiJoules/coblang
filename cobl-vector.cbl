@@ -102,12 +102,19 @@
          goback.
 
        entry "vector-back" using local-vector ptr-return.
+       vector-back.
          perform compute-allocation-size.
          move vector-data in local-vector to ptr-return.
          compute size-bytes =
            allocation-size-bytes *
            (vector-size in local-vector - 1).
          set ptr-return up by size-bytes.
+       end-vector-back.
+         goback.
+
+       entry "vector-pop-back" using local-vector ptr-return.
+         perform vector-back.
+         set vector-size in local-vector down by 1.
          goback.
 
        entry "vector-size" using local-vector size-return.

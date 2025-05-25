@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <libcob.h>
 #include <string>
+#include <new>
 
 #include "coblang.h"
 
@@ -388,6 +389,12 @@ void tree_map_clone(CoblTreeMap *dst, CoblTreeMap *src) {
   cob_call("tree-map-clone", 2, cob_argv);
 }
 
+void tree_map_erase(CoblTreeMap *m, const void *key) {
+  char ret;
+  void *cob_argv[] = {m, &key};
+  cob_call("tree-map-erase", 2, cob_argv);
+}
+
 TEST_F(CoblTest, TreeMapConstruction) {
   CoblTreeMap m;
   tree_map_construct(&m, nullptr, nullptr, nullptr);
@@ -428,6 +435,8 @@ TEST_F(CoblTest, TreeMapInsertion) {
   ASSERT_EQ(res, val2);
   ASSERT_TRUE(tree_map_get(&m, "key", &res));
   ASSERT_EQ(res, val);
+  ASSERT_NE(tree_map_right(&m), nullptr);
+  ASSERT_EQ(tree_map_left(&m), nullptr);
 
   tree_map_destroy(&m);
 }
@@ -499,6 +508,56 @@ TEST_F(CoblTest, TreeMapCloneEmpty) {
 
   tree_map_destroy(&m);
   tree_map_destroy(&m2);
+}
+
+TEST_F(CoblTest, TreeMapErase) {
+  CoblTreeMap m;
+  string_tree_map_construct(&m);
+
+  const char *val = "val";
+  const char *key = "key";
+  tree_map_set(&m, key, val);
+  ASSERT_STREQ((const char *)tree_map_key(&m), key);
+
+  tree_map_erase(&m, key);
+  ASSERT_EQ(tree_map_key(&m), nullptr);
+
+  tree_map_destroy(&m);
+}
+
+TEST_F(CoblTest, TreeMapErase2) {
+  CoblTreeMap m;
+  string_tree_map_construct(&m);
+
+  const char *val = "val";
+  const char *key = "key";
+  tree_map_set(&m, key, val);
+
+  const char *val2 = "val2";
+  const char *key2 = "key2";
+  tree_map_set(&m, key2, val2);
+
+  void *res;
+  ASSERT_TRUE(tree_map_get(&m, key2, &res));
+  ASSERT_EQ(res, val2);
+  ASSERT_TRUE(tree_map_get(&m, key, &res));
+  ASSERT_EQ(res, val);
+
+  ASSERT_NE(tree_map_right(&m), nullptr);
+  ASSERT_EQ(tree_map_left(&m), nullptr);
+
+  auto *m2 = std::launder((CoblTreeMap *)tree_map_right(&m));
+  ASSERT_EQ(tree_map_right(m2), nullptr);
+  ASSERT_EQ(tree_map_left(m2), nullptr);
+
+  tree_map_erase(&m, key);
+  ASSERT_STREQ((const char *)tree_map_key(&m), key2);
+  ASSERT_EQ(tree_map_right(&m), nullptr);
+  ASSERT_EQ(tree_map_left(&m), nullptr);
+  ASSERT_TRUE(tree_map_get(&m, key2, &res));
+  ASSERT_EQ(res, val2);
+
+  tree_map_destroy(&m);
 }
 
 }  // namespace

@@ -21,8 +21,6 @@
 
            01 read-char pic x.
 
-           01 identification-kw pic x(100) value "IDENTIFICATION".
-
            01 filename-buffer pic x(1000).
       * NOTE: This must match the type of pic-length in cobl-string.
            01 filename-buffer-size usage index.
@@ -41,6 +39,8 @@
               copy "cobl-string.cpy".
            01 local-string.
               copy "cobl-string.cpy".
+           01 line-ret usage binary-c-long unsigned.
+           01 col-ret usage binary-c-long unsigned.
 
        PROCEDURE DIVISION.
          stop run.
@@ -53,6 +53,9 @@
             local-string
             tmp-ptr
             filename-buffer-size.
+
+         move 1 to lexer-line in local-lexer.
+         move 0 to lexer-col in local-lexer.
 
          open input lexer-file.
          perform check-status.
@@ -72,6 +75,13 @@
                set lexer-at-eof in local-lexer to true
                exit paragraph
            end-read
+
+           if lexer-lookahead in local-lexer = x"0A"
+             set lexer-line in local-lexer up by 1
+             move 0 to lexer-col in local-lexer
+           else
+             set lexer-col in local-lexer up by 1
+           end-if
            set lexer-does-have-lookahead in local-lexer to true
          end-if.
 
@@ -92,6 +102,13 @@
            at end
              set lexer-at-eof in local-lexer to true
          end-read.
+
+         if get-char = x"0A"
+           set lexer-line in local-lexer up by 1
+           move 0 to lexer-col in local-lexer
+         else
+           set lexer-col in local-lexer up by 1
+         end-if.
        end-do-get-char.
 
       *
@@ -123,7 +140,8 @@
        end-skip-whitespace-and-comments.
 
       * Lex one string into `token-string`.
-       entry "lexer-lex" using local-lexer token-string.
+       entry "lexer-lex" using local-lexer token-string line-ret
+             col-ret.
          perform check-status.
 
          if lexer-eof in local-lexer = 'Y'
@@ -148,6 +166,9 @@
 
            exit perform
          end-perform.
+
+         move lexer-line in local-lexer to line-ret.
+         move lexer-col in local-lexer to col-ret.
 
       * Parse a period.
          if read-char = "." or

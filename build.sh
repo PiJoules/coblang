@@ -25,7 +25,7 @@ LLVM_CONFIG_CORE_LIBS=$(${LLVM_CONFIG} --libs core)
 
 if [[ "$COMPILER_INFO" == *"clang"* ]]; then
   export COB_CC=${CC}
-  export COB_CFLAGS="-fsanitize=address -Wno-deprecated-non-prototype -g3"
+  export COB_CFLAGS="-fsanitize=address -Wno-deprecated-non-prototype -g3 -Wno-pointer-sign"
   export COB_LDFLAGS="-fsanitize=address"
 fi
 

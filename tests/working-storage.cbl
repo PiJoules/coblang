@@ -1,6 +1,6 @@
-      * RUN: coblang %s 2>&1 | FileCheck %s
+      * RUN: coblang %s --dump-ir 2>&1 | FileCheck %s
 
-      * CHECK-DAG: @hello-world-str = global [16 x i8] c"Hello world    \00"
+      * CHECK-DAG: @hello-world-str = hidden global [16 x i8] c"Hello world    \00"
       * CHECK-DAG: [[NEWLINE:@.*]] = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
       * CHECK-DAG: [[FORMAT:@.*]] = private unnamed_addr constant [3 x i8] c"%s\00", align 1
 

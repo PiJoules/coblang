@@ -1,4 +1,4 @@
-      * RUN: coblang %s 2>&1 | FileCheck %s
+      * RUN: coblang %s --dump-ir 2>&1 | FileCheck %s
 
       * CHECK-DAG: [[GLOB:@.*]] = private unnamed_addr constant [12 x i8] c"Hello world\00", align 1
       * CHECK-DAG: [[NEWLINE:@.*]] = private unnamed_addr constant [2 x i8] c"\0A\00", align 1

@@ -75,6 +75,17 @@ class TestCompiler:
             "Hello          \nworld!         \n",
         )
 
+    def test_cobl_memcpy(self):
+        self.assertEqual(
+            self.invoke(
+                [
+                    (EXAMPLES_DIR / "cobl-memcpy-example.cbl", []),
+                    (EXAMPLES_DIR / "invoke-cobl-memcpy-example.cbl", ["-x"]),
+                ]
+            ),
+            "abc123    \n",
+        )
+
 
 class TestStage1Compiler(unittest.TestCase, TestCompiler):
     def setUp(self):

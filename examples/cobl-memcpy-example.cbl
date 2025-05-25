@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-         PROGRAM-ID. cobl-memcpy.
+         PROGRAM-ID. cobl-memcpy-example.
        DATA DIVISION.
          local-storage section.
            01 src-char-buffer pic x based.
@@ -13,12 +13,7 @@
            01 dst-ptr usage pointer.
            01 cpy-size usage binary-c-long unsigned.
 
-      *
-      * Effectively similar to memcpy.
-      *
        PROCEDURE DIVISION using dst-ptr src-ptr cpy-size.
-      * TODO: Assert that optimizations can turn this into a memcpy intrinsic.
-      * Avoid modifying the original strings.
          move src-ptr to local-src-ptr.
          move dst-ptr to local-dst-ptr.
          move src-ptr to end-src-ptr.

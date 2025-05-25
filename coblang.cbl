@@ -35,6 +35,7 @@
            01 tmp-unsigned-long usage binary-c-long unsigned.
            01 tmp-ptr usage pointer.
            01 add-main pic x value 'N'.
+           01 dump-ir pic x value 'N'.
            01 found-input-file pic x value 'N'.
 
        PROCEDURE DIVISION.
@@ -72,7 +73,9 @@
              when "-o"
                perform handle-output-flag
              when "-x"
-               perform handle-main-flag
+               move 'Y' to add-main
+             when "--dump-ir"
+               move 'Y' to dump-ir
              when other
                if found-input-file = 'N'
                  call "string-construct-move"
@@ -108,6 +111,9 @@
         
          call "codegen-run" using coblang-codegen add-main.
 
+         if dump-ir = 'Y'
+           call "dump-module" using coblang-codegen.
+
          display "writing to: " no advancing.
          call "string-display" using output-file 'Y'.
 
@@ -133,8 +139,3 @@
          set address of arg to argv.
          call "string-destroy" using output-file.
          call "string-construct-from-c-str" using output-file arg.
-       end-handle-output-flag.
-
-       handle-main-flag.
-         move 'Y' to add-main.
-       end-handle-main-flag.

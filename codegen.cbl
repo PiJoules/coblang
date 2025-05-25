@@ -7,14 +7,19 @@
            01 LLVMContext usage pointer value null.
            01 LLVMInt8Type usage pointer value null.
            01 LLVMInt32Type usage pointer value null.
+           01 LLVMInt1Type usage pointer value null.
            01 LLVMPtrType usage pointer value null.
            01 LLVMVoidType usage pointer value null.
            01 LLVMInt32ZeroValue usage pointer value null.
+           01 LLVMInt8ZeroValue usage pointer value null.
+           01 LLVMInt1ZeroValue usage pointer value null.
            01 LLVMInt32OneValue usage pointer value null.
            01 LLVMInt32NegOneValue usage pointer value null.
            01 LLVMNullPtrValue usage pointer value null.
            01 LLVMNewlineGlobalString usage pointer value null.
            01 LLVMStringFormatSpecifier usage pointer value null.
+           01 LLVMPointerFormatSpecifier usage pointer value null.
+           01 LLVMIntFormatSpecifier usage pointer value null.
            01 LLVMEntryPointFuncType usage pointer value null.
            01 LLVMInternalFuncType usage pointer value null.
 
@@ -24,6 +29,8 @@
            01 parsed-identifier.
              copy "cobl-string.cpy".
            01 parsed-integer.
+             copy "cobl-string.cpy".
+           01 parsed-level.
              copy "cobl-string.cpy".
 
       * A parsed pic type is a pair of vectors. The first vector contains
@@ -36,7 +43,11 @@
                  copy "cobl-vector.cpy".
            01 parsed-pic-value.
               copy "cobl-string.cpy".
-           01 did-parse-pic-value pic x.
+           01 did-parse-pic-type pic x.
+           01 parsed-data-global usage pointer.
+           01 parsed-llvm-type usage pointer.
+           01 lhs-is-pic pic x.
+           01 rhs-is-pic pic x.
 
            01 llvm-error usage pointer.
            01 llvm-triple usage pointer.
@@ -49,6 +60,22 @@
            01 llvm-value-res2 usage pointer.
            01 llvm-target-data-res usage pointer.
            01 llvm-bb-res usage pointer.
+           01 llvm-src-value-res usage pointer.
+           01 llvm-dst-value-res usage pointer.
+           01 llvm-src-type-res usage pointer.
+           01 llvm-dst-type-res usage pointer.
+           01 llvm-cond-bb usage pointer.
+           01 llvm-loop-body-bb usage pointer.
+           01 llvm-merge-bb usage pointer.
+           01 llvm-lhs-value-res usage pointer.
+           01 llvm-rhs-value-res usage pointer.
+           01 llvm-lhs-type-res usage pointer.
+           01 llvm-rhs-type-res usage pointer.
+
+           01 llvm-cond-bb-stack.
+              copy "cobl-vector.cpy".
+           01 llvm-merge-bb-stack.
+              copy "cobl-vector.cpy".
 
       * LLVMCodeGenFileType
            78 LLVMAssemblyFile value 0.
@@ -119,6 +146,29 @@
            78 LLVMHiddenVisibility value 1.
            78 LLVMProtectedVisibility value 2.
 
+      * LLVMTypeKind
+           78 LLVMVoidTypeKind value 0.
+           78 LLVMHalfTypeKind value 1.
+           78 LLVMFloatTypeKind value 2.
+           78 LLVMDoubleTypeKind value 3.
+           78 LLVMX86_FP80TypeKind value 4.
+           78 LLVMFP128TypeKind value 5.
+           78 LLVMPPC_FP128TypeKind value 6.
+           78 LLVMLabelTypeKind value 7.
+           78 LLVMIntegerTypeKind value 8.
+           78 LLVMFunctionTypeKind value 9.
+           78 LLVMStructTypeKind value 10.
+           78 LLVMArrayTypeKind value 11.
+           78 LLVMPointerTypeKind value 12.
+           78 LLVMVectorTypeKind value 13.
+           78 LLVMMetadataTypeKind value 14.
+      * 15 previously used by LLVMX86_MMXTypeKind
+           78 LLVMTokenTypeKind value 16.
+           78 LLVMScalableVectorTypeKind value 17.
+           78 LLVMBFloatTypeKind value 18.
+           78 LLVMX86_AMXTypeKind value 19.
+           78 LLVMTargetExtTypeKind value 20.
+
            01 func-type-params.
               copy "cobl-vector.cpy".
 
@@ -162,8 +212,8 @@
            01 tmp-unsigned-long-storage usage binary-c-long unsigned
               based.
            01 last-parsed-pic-symbol pic x.
-           01 is-linkage-section-global pic x.
            01 tmp-int usage binary-int.
+           01 tmp-unsigned-int usage binary-int unsigned.
            01 paragraph-bb usage pointer.
            01 paragraph-block-addr usage pointer.
            01 frame-ptr-alloca usage pointer.
@@ -175,6 +225,21 @@
            01 num-entries usage binary-c-long unsigned.
            01 default-value usage pointer.
            01 alloca-ptr usage pointer.
+           01 token-line usage binary-c-long unsigned.
+           01 token-col usage binary-c-long unsigned.
+           01 token-line-buff pic z(40).
+           01 token-col-buff pic z(40).
+
+      * These are set by `get-expression`.
+           01 is-linkage-section-global pic x.
+           01 is-local-storage-section-global pic x.
+           01 is-based pic x.
+           01 is-string-literal pic x.
+
+           01 data-division-section pic x.
+              88 parsing-working-storage value 0.
+              88 parsing-local-storage value 1.
+              88 parsing-linkage value 2.
 
            01 tmp-string.
               copy "cobl-string.cpy".
@@ -209,14 +274,18 @@
       * This is a map of C strings to allocas for local storage variables.
            01 local-storage-vars.
               copy "cobl-tree-map-node.cpy".
+           01 local-storage-var-types.
+              copy "cobl-tree-map-node.cpy".
       * This is a map of C strings to basic blocks for paragraphs.
            01 paragraph-bbs.
+              copy "cobl-tree-map-node.cpy".
+      * This is a map of C strings to BASED values.
+           01 based-vars.
               copy "cobl-tree-map-node.cpy".
 
            01 bb-entry-ptr usage pointer.
            01 builder-ptr usage pointer.
            01 entry-builder-ptr usage pointer.
-           01 last-builder-ptr usage pointer.
            01 func-ptr usage pointer.
            01 program-func-ptr usage pointer.
            01 entry-func-ptr usage pointer.
@@ -225,17 +294,17 @@
            01 printf-func-type-ptr usage pointer.
            01 exit-func-ptr usage pointer.
            01 exit-func-type-ptr usage pointer.
-           01 compare-result usage binary-int.
            01 pic-buffer pic x(1024).
+           01 pic-buffer-upper pic x(1024).
            78 pic-buffer-size value length of pic-buffer.
 
            01 this-codegen-lexer based.
               copy "lexer.cpy".
 
            01 move-from-llvm-value-ptr usage pointer.
-           01 move-from-size usage binary-c-long unsigned.
+           01 move-from-size usage binary-double unsigned.
            01 move-to-llvm-value-ptr usage pointer.
-           01 move-to-size usage binary-c-long unsigned.
+           01 move-to-size usage binary-double unsigned.
 
          LINKAGE SECTION.
            01 this-codegen.
@@ -315,6 +384,7 @@
               returning LLVMContext.
          call "LLVMIntType" using by value 32 returning LLVMInt32Type.
          call "LLVMIntType" using by value 8 returning LLVMInt8Type.
+         call "LLVMIntType" using by value 1 returning LLVMInt1Type.
          call "LLVMPointerTypeInContext"
               using
                 by value LLVMContext
@@ -324,6 +394,12 @@
          call "LLVMConstNull" using
               by value LLVMInt32Type
               returning LLVMInt32ZeroValue.
+         call "LLVMConstNull" using
+              by value LLVMInt8Type
+              returning LLVMInt8ZeroValue.
+         call "LLVMConstNull" using
+              by value LLVMInt1Type
+              returning LLVMInt1ZeroValue.
          call "LLVMConstInt" using
               by value LLVMInt32Type
               by value 1
@@ -394,6 +470,69 @@
               using by value llvm-module in this-codegen.
          goback.
 
+       dispatch-verb.
+         perform get-token-string-and-buffer.
+
+         if lexer-eof in this-codegen-lexer = 'Y'
+           exit paragraph
+         end-if.
+
+      *   move token-line to token-line-buff
+      *   move token-col to token-col-buff
+      *   display function trim(token-line-buff, leading)
+      *           ":"
+      *           function trim(token-col-buff, leading)
+      *           ": '" no advancing
+      *   call "string-display" using token-string 'N'
+      *   display "'"
+
+         evaluate pic-buffer-upper
+           when "IDENTIFICATION"
+             perform handle-identification-division
+           when "PROCEDURE"
+             perform handle-procedure-division
+           when "PROGRAM-ID"
+             perform handle-program-id
+           when "DATA"
+             perform handle-data-division
+           when "DISPLAY"
+             perform handle-display
+           when "PERFORM"
+             perform handle-perform
+           when "ENTRY"
+             perform handle-entry
+           when "GOBACK"
+             perform handle-goback
+           when "EXIT"
+             perform handle-exit
+           when "MOVE"
+             perform handle-move
+           when "SET"
+             perform handle-set
+           when "CALL"
+             perform handle-call
+      * Just skip period for now.
+           when "."
+             continue
+           when other
+      * This might be a paragraph declaration.
+             call "string-construct" using tmp-string
+             call "string-copy" using tmp-string token-string
+             perform peek-token-string-and-buffer
+             if pic-buffer = "."
+               call "string-copy" using token-string tmp-string
+               perform handle-paragraph
+             else
+               perform dump-error-loc
+               display "Unknown verb '" no advancing
+               call "string-display" using tmp-string 'N'
+               display "'"
+               stop run
+             end-if
+             call "string-destroy" using tmp-string
+         end-evaluate.
+       end-dispatch-verb.
+
       *
       * This does the actual codegen.
       *
@@ -404,6 +543,9 @@
          call "string-tree-map-construct" using
               paragraph-bbs.
          call "string-tree-map-construct" using local-storage-vars.
+         call "string-tree-map-construct" using local-storage-var-types.
+         call "string-tree-map-construct" using
+              based-vars.
 
          perform insert-program-func.
 
@@ -423,10 +565,23 @@
               by content x"00"
               returning LLVMStringFormatSpecifier.
 
+         call "LLVMBuildGlobalStringPtr" using
+              by value builder-ptr
+              by content function concatenate("%p", x"00")
+              by content x"00"
+              returning LLVMPointerFormatSpecifier.
+
+         call "LLVMBuildGlobalStringPtr" using
+              by value builder-ptr
+              by content function concatenate("%u", x"00")
+              by content x"00"
+              returning LLVMIntFormatSpecifier.
+
          set address of this-codegen-lexer to lexer-ptr in this-codegen.
 
          call "string-construct" using token-string.
          call "string-construct" using parsed-identifier.
+         call "string-construct" using parsed-level.
          call "string-construct" using parsed-integer.
          call "string-construct" using parsed-pic-value.
          call "vector-construct" using
@@ -437,6 +592,12 @@
               unsigned-long-size unsigned-long-align.
          call "vector-construct" using
               all-indirect-brs
+              pointer-size pointer-align.
+         call "vector-construct" using
+              llvm-cond-bb-stack
+              pointer-size pointer-align.
+         call "vector-construct" using
+              llvm-merge-bb-stack
               pointer-size pointer-align.
 
       * Add the frame stack. This is an array of pointers to return to
@@ -478,60 +639,8 @@
 
          move 0 to num-entries.
 
-         perform until lexer-eof in this-codegen-lexer = 'Y'
-           perform get-token-string-and-buffer
-
-           if lexer-eof in this-codegen-lexer = 'Y'
-             exit perform
-           end-if
-
-      *     display "'" no advancing
-      *     call "string-display" using token-string 'N'
-      *     display "'"
-
-           evaluate pic-buffer
-             when "IDENTIFICATION"
-               perform handle-identification-division
-             when "PROCEDURE"
-               perform handle-procedure-division
-             when "PROGRAM-ID"
-               perform handle-program-id
-             when "DATA"
-               perform handle-data-division
-             when "DISPLAY"
-               perform handle-display
-             when "PERFORM"
-               perform handle-perform
-             when "ENTRY"
-               perform handle-entry
-             when "GOBACK"
-               perform handle-goback
-             when "EXIT"
-               perform handle-exit
-             when "MOVE"
-               perform handle-move
-             when "CALL"
-               perform handle-call
-      * Just skip period for now.
-             when "."
-               continue
-             when other
-      * This might be a paragraph declaration.
-               call "string-construct" using tmp-string
-               call "string-copy" using tmp-string token-string
-               perform peek-token-string-and-buffer
-               if pic-buffer = "."
-                 call "string-copy" using token-string tmp-string
-                 perform handle-paragraph
-               else
-                 display "error: Unknown token '" no advancing
-                 call "string-display" using tmp-string 'N'
-                 display "'"
-                 stop run
-               end-if
-               call "string-destroy" using tmp-string
-           end-evaluate
-         end-perform.
+         perform dispatch-verb until
+                 lexer-eof in this-codegen-lexer = 'Y'.
 
       * End of the function.
          call "LLVMBuildRetVoid" using
@@ -574,10 +683,13 @@
          end-perform.
 
          call "vector-destroy" using all-indirect-brs.
+         call "vector-destroy" using llvm-cond-bb-stack.
+         call "vector-destroy" using llvm-merge-bb-stack.
          call "vector-destroy" using sizes in parsed-pic-type.
          call "vector-destroy" using symbols in parsed-pic-type.
          call "string-destroy" using token-string.
          call "string-destroy" using parsed-identifier.
+         call "string-destroy" using parsed-level.
          call "string-destroy" using parsed-integer.
          call "string-destroy" using parsed-pic-value.
 
@@ -620,7 +732,14 @@
          call "tree-map-destroy" using linkage-section-vars.
          call "tree-map-destroy" using linkage-section-var-types.
          call "tree-map-destroy" using paragraph-bbs.
+         call "tree-map-destroy" using based-vars.
          call "tree-map-destroy" using local-storage-vars.
+         call "tree-map-destroy" using local-storage-var-types.
+         goback.
+
+       entry "dump-module" using this-codegen.
+         call "LLVMDumpModule"
+              using by value llvm-module in this-codegen.
          goback.
 
       *
@@ -640,9 +759,6 @@
                 using by value llvm-module in this-codegen
            stop run
          end-if.
-
-         call "LLVMDumpModule"
-              using by value llvm-module in this-codegen.
 
          call "LLVMTargetMachineEmitToFile" using
               by value llvm-target-machine in this-codegen
@@ -669,11 +785,13 @@
          else
            call "string-clear" using token-string
            call "lexer-lex" using this-codegen-lexer token-string
+                token-line token-col
            set tmp-ptr to address of pic-buffer
            call "string-copy-to-pic" using
                 token-string
                 tmp-ptr
                 pic-buffer-size
+           move function upper-case(pic-buffer) to pic-buffer-upper
          end-if.
        end-get-token-string-and-buffer.
 
@@ -681,11 +799,13 @@
          if has-lookahead in this-codegen = 'N'
            call "string-clear" using token-string
            call "lexer-lex" using this-codegen-lexer token-string
+                token-line token-col
            set tmp-ptr to address of pic-buffer
            call "string-copy-to-pic" using
                 token-string
                 tmp-ptr
                 pic-buffer-size
+           move function upper-case(pic-buffer) to pic-buffer-upper
            move 'Y' to has-lookahead in this-codegen
          end-if.
        end-peek-token-string-and-buffer.
@@ -798,7 +918,6 @@
               by value paragraph-bb.
 
          perform pop-period.
-       end-handle-paragraph.
 
        handle-data-division.
          perform get-token-string-and-buffer.
@@ -811,175 +930,307 @@
          perform forever
            perform peek-token-string-and-buffer
 
-           if pic-buffer = "WORKING-STORAGE"
-             perform get-token-string-and-buffer
-             perform pop-section
-             perform pop-period
-             perform parse-working-storage-variables
-           else if pic-buffer = "LOCAL-STORAGE"
-             perform get-token-string-and-buffer
-             perform pop-section
-             perform pop-period
-             perform parse-local-storage-variables
-           else if pic-buffer = "LINKAGE"
-             perform get-token-string-and-buffer
-             perform pop-section
-             perform pop-period
-             perform parse-linkage-variables
-           else
-             exit perform
-           end-if
-         end-perform.
-       end-handle-data-division.
+           evaluate pic-buffer-upper
+             when "WORKING-STORAGE"
+                set parsing-working-storage to true
+             when "LOCAL-STORAGE"
+                set parsing-local-storage to true
+             when "LINKAGE"
+                set parsing-linkage to true
+             when other
+               exit perform
+           end-evaluate
 
-       parse-linkage-variables.
-         perform forever
-           perform peek-token-string-and-buffer
-           if function trim(pic-buffer TRAILING) is not numeric
-             exit perform
-           end-if
-
-           perform parse-level
-           perform parse-identifier
-           perform pop-pic
-           perform parse-pic-type-and-optional-val
+           perform get-token-string-and-buffer
+           perform pop-section
            perform pop-period
 
-           perform get-parsed-pic-size
+           perform forever
+             perform peek-token-string-and-buffer
+             if function trim(pic-buffer TRAILING) is not numeric
+               exit perform
+             end-if
 
-      * Increment by 1 because we always append the null terminator.
-           set tmp-unsigned-long up by 1
-           call "LLVMArrayType" using
-                by value LLVMInt8Type
-                by value tmp-unsigned-long
-                returning llvm-type-res
+             perform parse-level
+             perform parse-identifier
 
-           call "LLVMAddGlobal" using
-                by value llvm-module in this-codegen
-                by value LLVMPtrType
-                by value cobl-string-ptr in parsed-identifier
-                returning llvm-value-res
-           call "LLVMSetInitializer" using
-                by value llvm-value-res
-                by value LLVMNullPtrValue
-           call "LLVMSetVisibility" using
-                by value llvm-value-res
-                by value LLVMHiddenVisibility
+             perform get-llvm-type
 
-           call "tree-map-set" using
-                linkage-section-vars
-                cobl-string-ptr in parsed-identifier
-                llvm-value-res
-           call "tree-map-set" using
-                linkage-section-var-types
-                cobl-string-ptr in parsed-identifier
-                llvm-type-res
-         end-perform.
-       end-parse-linkage-variables.
+             evaluate true
+               when parsing-working-storage
+                 call "LLVMAddGlobal" using
+                      by value llvm-module in this-codegen
+                      by value llvm-type-res
+                      by value cobl-string-ptr in parsed-identifier
+                      returning parsed-data-global
 
-       parse-local-storage-variables.
-         perform forever
-           perform peek-token-string-and-buffer
-           if function trim(pic-buffer TRAILING) is not numeric
-             exit perform
-           end-if
-
-           perform parse-level
-           perform parse-identifier
-           perform pop-pic
-           perform parse-pic-type-and-optional-val
-           perform pop-period
-
-           perform get-parsed-pic-size
-      * Increment by 1 because we always append the null terminator.
-           set tmp-unsigned-long up by 1
-           call "LLVMArrayType" using
-                by value LLVMInt8Type
-                by value tmp-unsigned-long
-                returning llvm-type-res
-
-           call "LLVMBuildAlloca" using
-                by value builder-ptr
-                by value llvm-type-res
-                by value cobl-string-ptr in parsed-identifier
-                returning alloca-ptr
-
-           call "tree-map-set" using local-storage-vars
-                cobl-string-ptr in parsed-identifier
-                alloca-ptr
-
-           if did-parse-pic-value = 'Y'
-             perform get-parsed-pic-size
-             call "string-resize" using parsed-pic-value
-                  tmp-unsigned-long ' '
-
-             call "LLVMConstInt" using
-                  by value LLVMInt32Type
-                  by value cobl-string-length in parsed-pic-value
-                  by value 0
-                  returning llvm-value-res2
-
-             call "LLVMBuildGlobalStringPtr" using
-                  by value builder-ptr
-                  by value cobl-string-ptr in parsed-pic-value
-                  by content x"00"
-                  returning default-value
-
-             call "LLVMBuildMemCpy" using
-                  by value builder-ptr
-                  by value alloca-ptr
-                  by value 0
-                  by value default-value
-                  by value 0
-                  by value llvm-value-res2
-           end-if
-         end-perform.
-       end-parse-local-storage-variables.
-
-       parse-working-storage-variables.
-         perform forever
-           perform peek-token-string-and-buffer
-           if function trim(pic-buffer TRAILING) is not numeric
-             exit perform
-           end-if
-
-           perform parse-level
-           perform parse-identifier
-           perform pop-pic
-           perform parse-pic-type-and-optional-val
-           perform pop-period
-
-           perform get-parsed-pic-size
-      * Increment by 1 because we always append the null terminator.
-           set tmp-unsigned-long up by 1
-           call "LLVMArrayType" using
-                by value LLVMInt8Type
-                by value tmp-unsigned-long
-                returning tmp-ptr
-           
       * TODO: This global should be hidden unless it's an EXTERNAL data item.
-           call "LLVMAddGlobal" using
-                by value llvm-module in this-codegen
-                by value tmp-ptr
-                by value cobl-string-ptr in parsed-identifier
-                returning llvm-value-res
+                 call "LLVMSetVisibility" using
+                      by value parsed-data-global
+                      by value LLVMHiddenVisibility
+               when parsing-local-storage
+                 call "LLVMBuildAlloca" using
+                      by value builder-ptr
+                      by value llvm-type-res
+                      by value cobl-string-ptr in parsed-identifier
+                      returning alloca-ptr
 
-           perform get-parsed-pic-size
-           call "string-resize" using parsed-pic-value
-                tmp-unsigned-long ' '
+                 call "tree-map-set" using local-storage-vars
+                      cobl-string-ptr in parsed-identifier
+                      alloca-ptr
+                 call "tree-map-set" using local-storage-var-types
+                      cobl-string-ptr in parsed-identifier
+                      llvm-type-res
+               when parsing-linkage
+                 call "LLVMAddGlobal" using
+                      by value llvm-module in this-codegen
+                      by value LLVMPtrType
+                      by value cobl-string-ptr in parsed-identifier
+                      returning parsed-data-global
+                 call "LLVMSetInitializer" using
+                      by value parsed-data-global
+                      by value LLVMNullPtrValue
+                 call "LLVMSetLinkage" using
+                      by value parsed-data-global
+                      by value LLVMInternalLinkage
 
-           call "LLVMConstStringInContext" using
-                by value LLVMContext
-                by value cobl-string-ptr in parsed-pic-value
-                by value cobl-string-length in parsed-pic-value
-                by value 0
-                returning llvm-value-res2
+                 call "tree-map-set" using
+                      linkage-section-vars
+                      cobl-string-ptr in parsed-identifier
+                      parsed-data-global
+                 call "tree-map-set" using
+                      linkage-section-var-types
+                      cobl-string-ptr in parsed-identifier
+                      llvm-type-res
+             end-evaluate
 
-           call "LLVMSetInitializer" using
-                by value llvm-value-res
-                by value llvm-value-res2
+
+             perform peek-token-string-and-buffer
+             if pic-buffer-upper = "VALUE"
+               perform get-token-string-and-buffer
+
+               if parsing-linkage
+                 display "TODO: Handle VALUE in linkage section"
+                 stop run
+               end-if
+
+               perform get-token-string-and-buffer
+               evaluate pic-buffer-upper
+                 when "NULL"
+                   evaluate true
+                     when parsing-working-storage
+                       call "LLVMSetInitializer" using
+                            by value parsed-data-global
+                            by value LLVMNullPtrValue
+                     when parsing-local-storage
+                       call "LLVMConstNull" using
+                            by value llvm-type-res
+                            returning llvm-value-res
+                       call "LLVMBuildStore" using
+                            by value builder-ptr
+                            by value llvm-value-res
+                            by value alloca-ptr
+                   end-evaluate
+                 when other
+                   if pic-buffer(1:1) not = '"' and
+                      pic-buffer(1:1) not = "'"
+                     perform dump-error-loc
+                     display "Unable to handle VALUE '" no advancing
+                     call "string-display" using token-string
+                     display "'"
+                     stop run
+                   end-if
+
+                   move token-string to tmp-string
+                   perform strip-quotes-from-string-token
+                   move tmp-string to token-string
+                   call "string-copy" using
+                        parsed-pic-value token-string
+
+                   perform get-parsed-pic-size
+                   call "string-resize" using parsed-pic-value
+                        tmp-unsigned-long ' '
+
+                   evaluate true
+                     when parsing-working-storage
+                       call "LLVMConstStringInContext" using
+                            by value LLVMContext
+                            by value cobl-string-ptr in parsed-pic-value
+                            by value cobl-string-length in 
+                                     parsed-pic-value
+                            by value 0
+                            returning llvm-value-res2
+
+                       call "LLVMSetInitializer" using
+                            by value parsed-data-global
+                            by value llvm-value-res2
+                     when parsing-local-storage
+                       call "LLVMConstInt" using
+                            by value LLVMInt32Type
+                            by value cobl-string-length in
+                                     parsed-pic-value
+                            by value 0
+                            returning llvm-value-res2
+
+                       call "LLVMBuildGlobalStringPtr" using
+                            by value builder-ptr
+                            by value cobl-string-ptr in parsed-pic-value
+                            by content x"00"
+                            returning default-value
+
+                       call "LLVMBuildMemCpy" using
+                            by value builder-ptr
+                            by value alloca-ptr
+                            by value 0
+                            by value default-value
+                            by value 0
+                            by value llvm-value-res2
+                   end-evaluate
+               end-evaluate
+             else if pic-buffer-upper = "BASED"
+               perform get-token-string-and-buffer
+
+               if not parsing-local-storage
+                 display "TODO: Handle BASED for more than "
+                         "local-storage"
+                 stop run
+               end-if
+
+      * BASED local storage vars are represented as allocas for pointers.
+      * The alloca will store a pointer to the actual storage.
+               move null to tmp-ptr
+               call "tree-map-set" using based-vars
+                    cobl-string-ptr in parsed-identifier
+                    tmp-ptr
+
+      * TODO: Rather than erasing an already constructed value, we should
+      * instead parse the line in its entirety then construct the value
+      * based on the line.
+               call "LLVMInstructionEraseFromParent" using
+                    by value alloca-ptr
+
+               call "LLVMBuildAlloca" using
+                    by value builder-ptr
+                    by value LLVMPtrType
+                    by value cobl-string-ptr in parsed-identifier
+                    returning alloca-ptr
+
+               call "tree-map-set" using local-storage-vars
+                    cobl-string-ptr in parsed-identifier
+                    alloca-ptr
+             else
+               evaluate true
+                 when parsing-working-storage
+                   if did-parse-pic-type = 'Y'
+      * Initialize the global even if no explicit VALUE is provided.
+                     call "string-clear" using parsed-pic-value
+                     perform get-parsed-pic-size
+                     call "string-resize" using parsed-pic-value
+                          tmp-unsigned-long ' '
+                     call "LLVMConstStringInContext" using
+                          by value LLVMContext
+                          by value cobl-string-ptr in parsed-pic-value
+                          by value cobl-string-length in
+                                   parsed-pic-value
+                          by value 0
+                          returning llvm-value-res
+                     call "LLVMSetInitializer" using
+                          by value parsed-data-global
+                          by value llvm-value-res
+                   else
+                     call "LLVMConstNull" using
+                          by value llvm-type-res
+                          returning llvm-value-res
+                     call "LLVMSetInitializer" using
+                          by value parsed-data-global
+                          by value llvm-value-res
+                   end-if
+                 when parsing-local-storage
+                   call "string-clear" using parsed-pic-value
+                   perform get-parsed-pic-size
+                   call "string-resize" using parsed-pic-value
+                        tmp-unsigned-long ' '
+
+                   set tmp-unsigned-long up by 1
+
+                   call "LLVMConstInt" using
+                        by value LLVMInt32Type
+                        by value tmp-unsigned-long
+                        by value 0
+                        returning llvm-value-res2
+
+                   call "LLVMBuildGlobalStringPtr" using
+                        by value builder-ptr
+                        by value cobl-string-ptr in parsed-pic-value
+                        by content x"00"
+                        returning default-value
+
+                   call "LLVMBuildMemCpy" using
+                        by value builder-ptr
+                        by value alloca-ptr
+                        by value 0
+                        by value default-value
+                        by value 0
+                        by value llvm-value-res2
+                 when parsing-linkage
+                   call "LLVMSetInitializer" using
+                        by value parsed-data-global
+                        by value LLVMNullPtrValue
+               end-evaluate
+             end-if
+
+             perform pop-period
+           end-perform
          end-perform.
-       end-parse-working-storage-variables.
+
+       abort-unknown-usage-type.
+         display "error: Unknown USAGE type '" no advancing.
+         call "string-display" using token-string 'N'.
+         display "'".
+         stop run.
+
+      * After parsing the identifier of a data item, get its type and
+      * place it in `llvm-type-res`.
+       get-llvm-type.
+         move 'N' to did-parse-pic-type
+         perform get-token-string-and-buffer
+         evaluate pic-buffer-upper
+           when "PIC"
+             move 'Y' to did-parse-pic-type
+             perform parse-pic-type
+
+             perform get-parsed-pic-size
+      * Increment by 1 because we always append the null terminator.
+             set tmp-unsigned-long up by 1
+             call "LLVMArrayType" using
+                  by value LLVMInt8Type
+                  by value tmp-unsigned-long
+                  returning llvm-type-res
+           when "USAGE"
+             perform get-token-string-and-buffer
+             evaluate pic-buffer-upper
+               when "POINTER"
+                 move LLVMPtrType to llvm-type-res
+               when "BINARY-C-LONG"
+                 perform peek-token-string-and-buffer
+                 if pic-buffer-upper = "UNSIGNED"
+                   perform get-token-string-and-buffer
+                 end-if
+                 move LLVMInt32Type to llvm-type-res
+               when other
+                 perform abort-unknown-usage-type
+             end-evaluate
+           when other
+             perform abort-expected-pic-or-usage
+         end-evaluate.
+
+       abort-expected-pic-or-usage.
+         perform dump-error-loc.
+         display "Expected either PIC or USAGE for type; "
+                 "found '" no advancing.
+         call "string-display" using token-string 'N'.
+         display "'".
+         stop run.
 
       * Get the total number of characters for the last parsed-pic-type
       * and store it in `tmp-unsigned-long`.
@@ -994,21 +1245,20 @@
          end-perform.
        end-get-parsed-pic-size.
 
-       parse-pic-type-and-optional-val.
+       parse-pic-type.
          perform get-token-string-and-buffer.
 
          call "vector-clear" using symbols in parsed-pic-type.
          call "vector-clear" using sizes in parsed-pic-type.
 
-         move 'N' to did-parse-pic-value.
-
-         if pic-buffer = "X"
+         if pic-buffer-upper = "X"
            call "vector-append-storage" using
                 symbols in parsed-pic-type tmp-ptr
            set address of tmp-char-storage to tmp-ptr
            move "X" to tmp-char-storage
          else
-           display "error: Unhandled pic symbol '" no advancing
+           perform dump-error-loc
+           display "Unhandled PIC symbol '" no advancing
            call "string-display" using token-string 'N'
            display "'"
            stop run
@@ -1060,23 +1310,6 @@
            end-evaluate
          end-perform.
 
-      * Parse an optional `value` clause.
-         perform peek-token-string-and-buffer.
-         if pic-buffer = "VALUE"
-           perform get-token-string-and-buffer
-           perform get-token-string-and-buffer
-      * Strip the quotes off a string.
-           if pic-buffer(1:1) = "'" or pic-buffer(1:1) = '"'
-             move token-string to tmp-string
-             perform strip-quotes-from-string-token
-             move tmp-string to token-string
-           end-if
-           call "string-copy" using parsed-pic-value token-string
-           move 'Y' to did-parse-pic-value
-         end-if.
-         
-       end-parse-pic-type-and-optional-val.
-
       * Gets a token and copies it into `parsed-integer`.
        parse-integer.
          perform get-token-string-and-buffer.
@@ -1086,7 +1319,6 @@
            display "'"
            stop run.
          call "string-copy" using parsed-integer token-string.
-       end-parse-integer.
 
       * Gets a token and copies it into `parsed-identifier`.
        parse-identifier.
@@ -1101,12 +1333,23 @@
            call "string-display" using token-string 'N'
            display "'"
            stop run.
+         call "string-copy" using parsed-level token-string.
        end-parse-level.
+
+       dump-error-loc.
+         move token-line to token-line-buff.
+         move token-col to token-col-buff.
+         display "error:" function trim(token-line-buff, leading)
+                 ":" function trim(token-col-buff, leading)
+                 ": " no advancing.
 
        pop-pic.
          perform get-token-string-and-buffer.
-         if pic-buffer not = "PIC"
-           display "error: Expected PIC"
+         if function upper-case(pic-buffer) not = "PIC"
+           perform dump-error-loc
+           display "Expected PIC; instead found '" no advancing
+           call "string-display" using token-string 'N'
+           display "'"
            stop run.
        end-pop-pic.
 
@@ -1127,20 +1370,43 @@
        pop-period.
          perform get-token-string-and-buffer.
          if pic-buffer not = "."
-           display "error: Expected period"
+           perform dump-error-loc
+           display "Expected period"
            stop run.
-       end-pop-period.
+
+       pop-by.
+         perform get-token-string-and-buffer.
+         if pic-buffer-upper not = "BY"
+           perform dump-error-loc
+           display "Expected BY"
+           stop run.
+
+       pop-address.
+         perform get-token-string-and-buffer.
+         if pic-buffer-upper not = "ADDRESS"
+           perform dump-error-loc
+           display "Expected ADDRESS"
+           stop run.
+
+       pop-of.
+         perform get-token-string-and-buffer.
+         if pic-buffer-upper not = "OF"
+           perform dump-error-loc
+           display "Expected OF"
+           stop run.
 
        pop-to.
          perform get-token-string-and-buffer.
-         if pic-buffer not = "TO"
-           display "error: Expected `TO`"
+         if pic-buffer-upper not = "TO"
+           perform dump-error-loc
+           display "Expected `TO`; found '"
+                   function trim(pic-buffer, trailing)
+                   "'"
            stop run.
-       end-pop-to.
 
        pop-section.
          perform get-token-string-and-buffer.
-         if pic-buffer not = "SECTION"
+         if function upper-case(pic-buffer) not = "SECTION"
            display "error: Expected SECTION but found '" no advancing
            call "string-display" using token-string 'N'
            display "'"
@@ -1283,7 +1549,7 @@
 
          perform get-token-string-and-buffer.
 
-         evaluate pic-buffer
+         evaluate pic-buffer-upper
            when "USING"
              perform forever
                perform get-expression
@@ -1293,8 +1559,17 @@
                move llvm-value-res to tmp-ptr-storage
 
                perform peek-token-string-and-buffer
+               if pic-buffer = "."
+                 exit perform
+               end-if
+
                perform is-token-verb
-               if tmp-bool = 'Y' or pic-buffer = "."
+               if tmp-bool = 'Y'
+                 exit perform
+               end-if
+
+               perform is-token-verb-end
+               if tmp-bool = 'Y'
                  exit perform
                end-if
              end-perform
@@ -1365,27 +1640,118 @@
               by content x"00".
 
          call "vector-destroy" using parsed-callee-args.
-       end-handle-call.
+
+       handle-set-address-of.
+         perform get-expression.
+
+         move llvm-value-res to llvm-lhs-value-res.
+         move llvm-type-res to llvm-lhs-type-res.
+
+         perform pop-to.
+
+         perform get-expression.
+         move llvm-value-res to llvm-rhs-value-res.
+         move llvm-type-res to llvm-rhs-type-res.
+
+         call "LLVMBuildLoad2" using
+              by value builder-ptr
+              by value LLVMPtrType
+              by value llvm-rhs-value-res
+              by content x"00"
+              returning llvm-value-res.
+         call "LLVMBuildStore" using
+              by value builder-ptr
+              by value llvm-value-res
+              by value llvm-lhs-value-res.
+
+       handle-set.
+         perform peek-token-string-and-buffer.
+         if pic-buffer-upper = "ADDRESS"
+           perform handle-set-address-of
+           exit paragraph
+         end-if.
+
+         perform get-expression.
+         move llvm-value-res to llvm-src-value-res.
+         move llvm-type-res to llvm-src-type-res.
+
+         perform peek-token-string-and-buffer.
+         if pic-buffer-upper = "UP"
+           perform get-token-string-and-buffer
+           perform pop-by
+
+           call "LLVMBuildLoad2" using
+                by value builder-ptr
+                by value llvm-src-type-res
+                by value llvm-src-value-res
+                by content x"00"
+                returning llvm-dst-value-res
+
+           perform get-expression
+
+           call "LLVMBuildLoad2" using
+                by value builder-ptr
+                by value llvm-type-res
+                by value llvm-value-res
+                by content x"00"
+                returning llvm-value-res
+
+           if llvm-src-type-res = LLVMPtrType
+             call "LLVMBuildGEP2" using
+                  by value builder-ptr
+                  by value LLVMInt8Type
+                  by value llvm-dst-value-res
+                  by value address of llvm-value-res
+                  by value 1
+                  by content x"00"
+                  returning llvm-value-res
+           else
+             call "LLVMBuildAdd" using
+                  by value builder-ptr
+                  by value llvm-dst-value-res
+                  by value llvm-value-res
+                  by content x"00"
+                  returning llvm-value-res
+           end-if
+
+           call "LLVMBuildStore" using
+                by value builder-ptr
+                by value llvm-value-res
+                by value llvm-src-value-res
+
+           exit paragraph
+         end-if.
+
+         display "TODO: Handle other `set` variants: ".
+         call "string-display" using token-string 'Y'.
+         stop run.
 
        handle-move.
          perform get-expression.
+
+      * Both of these were PIC types.
+      * TODO: Rather than infering this from the llvm type, we should pass
+      * something from `get-expression` indicating if this was PIC or not.
+         move llvm-type-res to llvm-lhs-type-res.
+         perform llvm-type-res-is-pic.
+         move tmp-bool to lhs-is-pic.
+         move llvm-lhs-type-res to llvm-type-res.
+
          move llvm-value-res to move-from-llvm-value-ptr.
          if is-linkage-section-global = 'Y'
-           call "LLVMBuildLoad2" using
-                by value builder-ptr
-                by value LLVMPtrType
-                by value move-from-llvm-value-ptr
-                by content x"00"
-                returning move-from-llvm-value-ptr
-           call "tree-map-get" using
-                linkage-section-var-types
-                cobl-string-ptr in token-string
-                tmp-ptr
-                tmp-bool
            call "LLVMStoreSizeOfType" using
                 by value llvm-data-layout in this-codegen
-                by value tmp-ptr
+                by value llvm-type-res
                 returning move-from-size
+         else if is-local-storage-section-global = 'Y'
+           call "LLVMGetModuleDataLayout" using
+                by value llvm-module in this-codegen
+                returning llvm-target-data-res
+           call "LLVMStoreSizeOfType" using
+                by value llvm-target-data-res
+                by value llvm-type-res
+                returning tmp-unsigned-long-long
+           move tmp-unsigned-long-long to move-from-size
          else
            move move-from-llvm-value-ptr to tmp-ptr
            perform get-size-of-global
@@ -1395,50 +1761,83 @@
          perform pop-to.
 
          perform get-expression.
+
+         move llvm-type-res to llvm-rhs-type-res.
+         perform llvm-type-res-is-pic.
+         move tmp-bool to rhs-is-pic.
+         move llvm-rhs-type-res to llvm-type-res.
+
          move llvm-value-res to move-to-llvm-value-ptr.
+
          if is-linkage-section-global = 'Y'
-           display "linkage"
-           call "LLVMBuildLoad2" using
-                by value builder-ptr
-                by value LLVMPtrType
-                by value move-to-llvm-value-ptr
-                by content x"00"
-                returning move-to-llvm-value-ptr
-           call "tree-map-get" using
-                linkage-section-var-types
-                cobl-string-ptr in token-string
-                tmp-ptr
-                tmp-bool
            call "LLVMStoreSizeOfType" using
                 by value llvm-data-layout in this-codegen
-                by value tmp-ptr
+                by value llvm-type-res
                 returning move-to-size
+         else if is-local-storage-section-global = 'Y'
+           call "LLVMGetModuleDataLayout" using
+                by value llvm-module in this-codegen
+                returning llvm-target-data-res
+           call "LLVMStoreSizeOfType" using
+                by value llvm-target-data-res
+                by value llvm-type-res
+                returning tmp-unsigned-long-long
+           move tmp-unsigned-long-long to move-to-size
          else
            move move-to-llvm-value-ptr to tmp-ptr
            perform get-size-of-global
            move tmp-unsigned-long to move-to-size
          end-if.
 
-         move function min(move-from-size, move-to-size) to
-              tmp-unsigned-long.
+         if lhs-is-pic = 'Y' and rhs-is-pic = 'Y'
+           move function min(move-from-size, move-to-size) to
+                tmp-unsigned-long
       * Each of these strings is null-terminated, but we don't want to copy the
       * null-terminator.
-         set tmp-unsigned-long down by 1.
+           set tmp-unsigned-long down by 1
 
-         call "LLVMConstInt" using
-              by value LLVMInt32Type
-              by value tmp-unsigned-long
-              by value 0
-              returning llvm-value-res.
+           call "LLVMConstInt" using
+                by value LLVMInt32Type
+                by value tmp-unsigned-long
+                by value 0
+                returning llvm-value-res
 
-         call "LLVMBuildMemCpy" using
-              by value builder-ptr
-              by value move-to-llvm-value-ptr
-              by value 0
-              by value move-from-llvm-value-ptr
-              by value 0
-              by value llvm-value-res.
-       end-handle-move.
+           call "LLVMBuildMemCpy" using
+                by value builder-ptr
+                by value move-to-llvm-value-ptr
+                by value 0
+                by value move-from-llvm-value-ptr
+                by value 0
+                by value llvm-value-res
+         else if lhs-is-pic = 'Y' and rhs-is-pic = 'N'
+           display "TODO: Handle lhs-is-pic and !rhs-is-pic"
+           stop run
+         else if lhs-is-pic = 'N' and rhs-is-pic = 'Y'
+           display "TODO: Handle !lhs-is-pic and rhs-is-pic"
+           stop run
+         else
+           if llvm-lhs-type-res not = llvm-rhs-type-res
+             perform dump-error-loc
+             display "LHS and RHS in move do not match LLVM types: "
+             call "LLVMDumpType" using by value llvm-lhs-type-res
+             display " vs " no advancing
+             call "LLVMDumpType" using by value llvm-rhs-type-res
+             display " "
+             stop run
+           end-if
+
+           call "LLVMBuildLoad2" using
+                by value builder-ptr
+                by value llvm-lhs-type-res
+                by value move-from-llvm-value-ptr
+                by content x"00"
+                returning llvm-value-res
+           call "LLVMBuildStore" using
+                by value builder-ptr
+                by value llvm-value-res
+                by value move-to-llvm-value-ptr
+                by content x"00"
+         end-if.
 
       * Given an llvm global in `tmp-ptr`, return the size (in bytes) of
       * that global's value type in `tmp-unsigned-long`.
@@ -1459,36 +1858,160 @@
          move tmp-unsigned-long-long to tmp-unsigned-long.
        end-get-size-of-global.
 
-      * Parse an expression and store it in `llvm-value-res`.
-      *
-      * If the expression is an identifier to a linkage section global,
-      * this sets `is-linkage-section-global` to `Y` and the `token-string`
-      * will contain that global's identifier. Otherwise, `N`.
-      *
-      * TODO: This paragraph should be able to handle a linkage-section
-      * variable which does the double load.
+      * Parse an expression and store it in `llvm-value-res`. This also
+      * stores the values type in `llvm-type-res`. If the expression is a
+      * variable declared in data division, the type will be the global's
+      * value type. If it's a non-global constant, like an integer, it will
+      * return that constant's type.
        get-expression.
-         perform get-token-string-and-buffer.
          move 'N' to is-linkage-section-global.
+         move 'N' to is-local-storage-section-global.
+         move 'N' to is-string-literal.
+         move 'N' to is-based.
+
+         perform get-binop-expression.
+
+       get-binop-expression.
+         perform get-single-expression.
+         perform peek-token-string-and-buffer.
+
+         if pic-buffer = '='
+           perform get-token-string-and-buffer
+
+           call "LLVMBuildLoad2" using
+                by value builder-ptr
+                by value llvm-type-res
+                by value llvm-value-res
+                by content x"00"
+                returning llvm-lhs-value-res
+
+           perform get-single-expression
+
+           call "LLVMBuildLoad2" using
+                by value builder-ptr
+                by value llvm-type-res
+                by value llvm-value-res
+                by content x"00"
+                returning llvm-rhs-value-res
+
+           call "LLVMBuildICmp" using
+                by value builder-ptr
+                by value LLVMIntEq
+                by value llvm-lhs-value-res
+                by value llvm-rhs-value-res
+                by content x"00"
+                returning llvm-value-res
+           move LLVMInt1Type to llvm-type-res
+           exit paragraph
+         end-if.
+
+       get-single-expression.
+         perform peek-token-string-and-buffer.
+         if pic-buffer-upper = "ADDRESS"
+      * FIXME: I think variables named ADDRESS are allowed.
+           perform get-token-string-and-buffer
+           perform pop-of
+
+           perform get-token-string-and-buffer
+           call "tree-map-has" using based-vars
+                cobl-string-ptr in token-string
+                is-based
+
+           call "tree-map-get" using
+                local-storage-vars
+                cobl-string-ptr in token-string
+                llvm-value-res2
+                is-local-storage-section-global
+
+           if is-local-storage-section-global = 'N'
+             display "TODO: Finish handling ADDRESS OF "
+                     "non-local-storage vars"
+             stop run
+           end-if
+
+           if is-based = 'N'
+             call "LLVMBuildAlloca" using
+                  by value builder-ptr
+                  by value LLVMPtrType
+                  by content x"00"
+                  returning llvm-value-res
+             call "LLVMBuildStore" using
+                  by value builder-ptr
+                  by value llvm-value-res2
+                  by value llvm-value-res
+           else
+             move llvm-value-res2 to llvm-value-res
+           end-if
+
+           move LLVMPtrType to llvm-type-res
+
+           exit paragraph
+         end-if
+         
+         perform get-token-string-and-buffer.
 
       * First check if it is a string literal.
          call "string-front" using token-string tmp-char.
          if tmp-char = '"' or tmp-char = "'"
+           move 'Y' to is-string-literal
            move token-string to tmp-string
            perform get-llvm-string-from-string-literal
            exit paragraph
          end-if.
 
-      * Next check if it is in local-storage.
-        call "tree-map-get" using
-             local-storage-vars
-             cobl-string-ptr in token-string
-             tmp-ptr tmp-bool.
+      * Next check if it is an integer literal.
+         if function trim(pic-buffer TRAILING) is numeric
+           move function numval(pic-buffer) to tmp-unsigned-long
+           call "LLVMConstInt" using
+                by value LLVMInt32Type
+                by value tmp-unsigned-long
+                by value 0
+                returning llvm-value-res2
+           move LLVMInt32Type to llvm-type-res
 
-        if tmp-bool = 'Y'
-          move tmp-ptr to llvm-value-res
-          exit paragraph
-        end-if.
+           call "LLVMBuildAlloca" using
+                by value builder-ptr
+                by value LLVMInt32Type
+                by content x"00"
+                returning llvm-value-res
+           call "LLVMBuildStore" using
+                by value builder-ptr
+                by value llvm-value-res2
+                by value llvm-value-res
+
+           exit paragraph
+         end-if.
+
+      * Next check if it is in local-storage.
+         call "tree-map-get" using
+              local-storage-vars
+              cobl-string-ptr in token-string
+              llvm-value-res
+              is-local-storage-section-global.
+
+         call "tree-map-get" using
+              based-vars
+              cobl-string-ptr in token-string
+              tmp-ptr
+              is-based.
+
+         if is-local-storage-section-global = 'Y'
+           call "tree-map-get" using local-storage-var-types
+                cobl-string-ptr in token-string
+                llvm-type-res
+                tmp-ptr
+
+           if is-based = 'Y'
+             call "LLVMBuildLoad2" using
+                  by value builder-ptr
+                  by value LLVMPtrType
+                  by value llvm-value-res
+                  by content x"00"
+                  returning llvm-value-res
+           end-if
+
+           exit paragraph
+         end-if.
 
       * Last check if this is a global.
          call "LLVMGetNamedGlobal" using
@@ -1496,10 +2019,33 @@
               by value cobl-string-ptr in token-string
               returning llvm-value-res.
 
-         call "tree-map-get" using linkage-section-vars
+        if llvm-value-res = null
+          perform dump-error-loc
+          display "Unknown global '" no advancing
+          call "string-display" using token-string 'N'
+          display "'"
+          stop run
+        end-if
+
+      * Check if this global is in a linkage section. If it is, we need
+      * to do a load from this global.
+         call "tree-map-get" using linkage-section-var-types
               cobl-string-ptr in token-string
-              tmp-ptr is-linkage-section-global.
-       end-get-expression.
+              llvm-type-res is-linkage-section-global.
+
+         if is-linkage-section-global = 'Y'
+           call "LLVMBuildLoad2" using
+                by value builder-ptr
+                by value LLVMPtrType
+                by value llvm-value-res
+                by content x"00"
+                returning llvm-value-res
+           exit paragraph
+         end-if.
+
+         call "LLVMGlobalGetValueType" using
+              by value llvm-value-res
+              returning llvm-type-res.
 
       * Given a cobl-string in `tmp-string`, strip the leading and trailing
       * quotes from the string.
@@ -1512,16 +2058,18 @@
        end-strip-quotes-from-string-token.
 
       * Given a string literal in `tmp-string`, return an llvm-string in
-      * `llvm-value-res`.
+      * `llvm-value-res`. This also returns the string's type via
+      * `llvm-type-res`.
        get-llvm-string-from-string-literal.
          perform strip-quotes-from-string-token.
-
          call "LLVMBuildGlobalStringPtr" using
               by value builder-ptr
               by value cobl-string-ptr in tmp-string
               by content x"00"
               returning llvm-value-res.
-       end-get-llvm-string-from-string-literal.
+         call "LLVMGlobalGetValueType" using
+              by value llvm-value-res
+              returning llvm-type-res.
 
       * Given an identifier in `tmp-string`, return a global with the name
       * in `llvm-value-res`.
@@ -1552,24 +2100,12 @@
               by value llvm-bb-res.
        end-handle-goback.
 
-       handle-entry.
-         perform get-token-string-and-buffer.
-
-         if not (pic-buffer(1:1) = "'" or pic-buffer(1:1) = '"')
-           display "error: Expected string for ENTRY but found '"
-                   no advancing
-           call "string-display" using token-string 'N'
-           display "'"
-           stop run
-         end-if.
-
-         call "string-construct" using tmp-string.
-         call "string-construct" using entry-name-string.
-         call "string-copy" using tmp-string token-string.
-         perform strip-quotes-from-string-token.
-         call "string-copy" using entry-name-string tmp-string.
-         call "string-destroy" using tmp-string.
-
+      * Create an entry function given an entry point name in
+      * `entry-name-string`. The next token that can be popped from the parser
+      * can be USING. If it is using, it will parse the USING and tokens
+      * following it to construct the arguments for the entry function. This
+      * will also pop any trailing period at the end of the entry.
+       add-entry-impl.
          call "LLVMAddFunction" using
               by value llvm-module in this-codegen
               by value cobl-string-ptr in entry-name-string
@@ -1585,15 +2121,16 @@
               by value bb-entry-ptr.
 
          perform peek-token-string-and-buffer.
-         if pic-buffer = "USING"
+         if pic-buffer-upper = "USING"
            perform get-token-string-and-buffer
            move 0 to iter
 
            perform forever
-             perform get-token-string-and-buffer
+             perform peek-token-string-and-buffer
              if pic-buffer = "."
                exit perform
              end-if
+             perform get-token-string-and-buffer
 
              call "tree-map-get" using
                   linkage-section-vars
@@ -1687,8 +2224,29 @@
               by value llvm-bb-res.
 
          set num-entries up by 1.
+
+         perform pop-period.
+
+       handle-entry.
+         perform get-token-string-and-buffer.
+
+         if not (pic-buffer(1:1) = "'" or pic-buffer(1:1) = '"')
+           display "error: Expected string for ENTRY but found '"
+                   no advancing
+           call "string-display" using token-string 'N'
+           display "'"
+           stop run
+         end-if.
+
+         call "string-construct" using tmp-string.
+         call "string-construct" using entry-name-string.
+         call "string-copy" using tmp-string token-string.
+         perform strip-quotes-from-string-token.
+         call "string-copy" using entry-name-string tmp-string.
+         call "string-destroy" using tmp-string.
+
+         perform add-entry-impl.
          call "string-destroy" using entry-name-string.
-       end-handle-entry.
 
        is-last-instruction-terminator.
          call "LLVMGetInsertBlock" using
@@ -1712,10 +2270,116 @@
          end-if.
        end-is-last-instruction-terminator.
 
+      * This is effectively a while loop.
+       handle-perform-until.
+         call "LLVMCreateBasicBlockInContext" using
+              by value LLVMContext
+              by content function
+                 concatenate("perform-cond-check", x"00")
+              returning llvm-cond-bb.
+         call "LLVMCreateBasicBlockInContext" using
+              by value LLVMContext
+              by content function
+                 concatenate("perform-until-body", x"00")
+              returning llvm-loop-body-bb.
+         call "LLVMCreateBasicBlockInContext" using
+              by value LLVMContext
+              by content function
+                 concatenate("perform-until-end", x"00")
+              returning llvm-merge-bb.
+
+         call "LLVMBuildBr" using
+              by value builder-ptr
+              by value llvm-cond-bb.
+         call "LLVMAppendExistingBasicBlock" using
+              by value program-func-ptr
+              by value llvm-cond-bb.
+         call "LLVMPositionBuilderAtEnd" using
+              by value builder-ptr
+              by value llvm-cond-bb.
+
+      * Now do emit the checks.
+         perform get-expression.
+         
+         call "LLVMBuildICmp" using
+              by value builder-ptr
+              by value LLVMIntEq
+              by value llvm-value-res
+              by value LLVMInt1ZeroValue
+              by content x"00"
+              returning llvm-value-res.
+
+         call "LLVMBuildCondBr" using
+              by value builder-ptr
+              by value llvm-value-res
+              by value llvm-loop-body-bb
+              by value llvm-merge-bb.
+         call "LLVMAppendExistingBasicBlock" using
+              by value program-func-ptr
+              by value llvm-loop-body-bb.
+         call "LLVMPositionBuilderAtEnd" using
+              by value builder-ptr
+              by value llvm-loop-body-bb.
+
+      * Now emit the function body. To prevent overwriting the BBs we created,
+      * we need to stash them somewhere.
+         call "vector-append-storage" using
+              llvm-cond-bb-stack tmp-ptr.
+         set address of tmp-ptr-storage to tmp-ptr.
+         move llvm-cond-bb to tmp-ptr-storage.
+         call "vector-append-storage" using
+              llvm-merge-bb-stack tmp-ptr.
+         set address of tmp-ptr-storage to tmp-ptr.
+         move llvm-merge-bb to tmp-ptr-storage.
+
+         perform forever
+           perform dispatch-verb
+
+           if lexer-eof in this-codegen-lexer = 'Y'
+             exit perform
+           end-if
+
+           perform peek-token-string-and-buffer
+           if pic-buffer-upper = "END-PERFORM"
+             perform get-token-string-and-buffer
+             exit perform
+           end-if
+         end-perform.
+      *   perform dispatch-verb until
+      *           lexer-eof in this-codegen-lexer = 'Y'.
+
+         call "vector-pop-back" using llvm-cond-bb-stack tmp-ptr.
+         set address of tmp-ptr-storage to tmp-ptr.
+         move tmp-ptr-storage to llvm-cond-bb.
+         call "vector-pop-back" using llvm-merge-bb-stack tmp-ptr.
+         set address of tmp-ptr-storage to tmp-ptr.
+         move tmp-ptr-storage to llvm-merge-bb.
+
+         call "LLVMBuildBr" using
+              by value builder-ptr
+              by value llvm-cond-bb.
+         call "LLVMAppendExistingBasicBlock" using
+              by value program-func-ptr
+              by value llvm-merge-bb.
+         call "LLVMPositionBuilderAtEnd" using
+              by value builder-ptr
+              by value llvm-merge-bb.
+
+      *   perform peek-token-string-and-buffer.
+      *   display pic-buffer.
+      *   if pic-buffer-upper = "END-PERFORM"
+      *     perform get-token-string-and-buffer
+      *   end-if.
+
        handle-perform.
-      * ALl paragraphs are implemented as static functions to make returning
+      * All paragraphs are implemented as static functions to make returning
       * back from performs simpler.
          perform get-token-string-and-buffer.
+
+         if pic-buffer-upper = "UNTIL"
+           perform handle-perform-until
+           exit paragraph
+         end-if.
 
          call "tree-map-get" using paragraph-bbs
               cobl-string-ptr in token-string
@@ -1787,22 +2451,68 @@
 
       * We parsed and popped a DISPLAY token. Spin up a printf.
        handle-display.
-         move LLVMStringFormatSpecifier to printf-args(1).
+         perform forever
+           perform get-expression
+           move llvm-type-res to llvm-lhs-type-res
+           perform llvm-type-res-is-pic
 
-         perform get-expression.
-         move llvm-value-res to printf-args(2).
+           evaluate true
+             when tmp-bool = 'Y'
+               move LLVMStringFormatSpecifier to printf-args(1)
+             when other
+               call "LLVMGetTypeKind" using
+                    by value llvm-lhs-type-res
+                    returning tmp-int
 
-         perform get-printf-func.
-         call "LLVMBuildCall2" using
-              by value builder-ptr
-              by value printf-func-type-ptr
-              by value printf-func-ptr
-              by value address of printf-args(1)
-              by value 2
-              by content x"00".
+               evaluate tmp-int
+                 when LLVMPointerTypeKind
+                   move LLVMPointerFormatSpecifier to printf-args(1)
+                 when LLVMIntegerTypeKind
+                   move LLVMIntFormatSpecifier to printf-args(1)
+                 when other
+                   perform dump-error-loc
+                   display "Unable to display LLVM type for '"
+                   call "LLVMDumpType" using by value llvm-lhs-type-res
+                   display "'"
+                   stop run
+               end-evaluate
+
+               call "LLVMBuildLoad2" using
+                    by value builder-ptr
+                    by value llvm-lhs-type-res
+                    by value llvm-value-res
+                    by content x"00"
+                    returning llvm-value-res
+           end-evaluate
+
+           move llvm-value-res to printf-args(2)
+
+           perform get-printf-func
+           call "LLVMBuildCall2" using
+                by value builder-ptr
+                by value printf-func-type-ptr
+                by value printf-func-ptr
+                by value address of printf-args(1)
+                by value 2
+                by content x"00"
+
+           perform peek-token-string-and-buffer
+           if pic-buffer = "."
+             exit perform
+           end-if
+
+           perform is-token-verb-end
+           if tmp-bool = 'Y'
+             exit perform
+           end-if
+
+           perform is-token-verb
+           if tmp-bool = 'Y'
+             exit perform
+           end-if
+         end-perform.
 
          perform emit-print-newline.
-       end-handle-display.
 
        handle-identification-division.
          perform get-token-string-and-buffer
@@ -1816,41 +2526,12 @@
        end-handle-identification-division.
 
        handle-procedure-division.
-         perform get-token-string-and-buffer
+         perform get-token-string-and-buffer.
 
-         if pic-buffer not = "DIVISION"
+         if pic-buffer-upper not = "DIVISION"
            display "error: Expected 'PROCEDURE DIVISION'."
            stop run
          end-if.
-
-         perform pop-period.
-
-      * Add the initial procedure entry point.
-         call "LLVMAddFunction" using
-              by value llvm-module in this-codegen
-              by value cobl-string-ptr in
-                       module-identifier in this-codegen
-              by value LLVMEntryPointFuncType
-              returning entry-func-ptr.
-         call "LLVMAppendBasicBlock" using
-              by value entry-func-ptr
-              by content function concatenate("entry", x"00")
-              returning bb-entry-ptr.
-         call "LLVMCreateBuilder" returning entry-builder-ptr.
-         call "LLVMPositionBuilderAtEnd" using
-              by value entry-builder-ptr
-              by value bb-entry-ptr.
-
-         call "LLVMBuildCall2" using
-              by value entry-builder-ptr
-              by value LLVMInternalFuncType
-              by value program-func-ptr
-              by value address of LLVMInt32ZeroValue
-              by value 1
-              by content x"00".
-
-         call "LLVMBuildRetVoid" using by value entry-builder-ptr.
-         call "LLVMDisposeBuilder" using by value entry-builder-ptr.
 
       * In the procedure division, emit the switch for dispatching
       * between entries.
@@ -1874,15 +2555,20 @@
               by value builder-ptr
               by value llvm-bb-res.
 
-         set num-entries up by 1.
-       end-handle-procedure-division.
+         call "string-construct" using entry-name-string.
+         call "string-copy" using entry-name-string
+              module-identifier in this-codegen.
+
+         perform add-entry-impl.
+         call "string-destroy" using entry-name-string.
 
        get-newline-global-string.
-         call "LLVMBuildGlobalStringPtr" using
-              by value builder-ptr
-              by content function concatenate(x"0A", x"00")
-              by content x"00"
-              returning LLVMNewlineGlobalString.
+         if LLVMNewlineGlobalString = null
+           call "LLVMBuildGlobalStringPtr" using
+                by value builder-ptr
+                by content function concatenate(x"0A", x"00")
+                by content x"00"
+                returning LLVMNewlineGlobalString.
        end-get-newline-global-string.
 
        emit-print-newline.
@@ -1895,7 +2581,6 @@
               by value address of LLVMNewlineGlobalString
               by value 1
               by content x"00".
-       end-emit-print-newline.
 
        get-printf-func.
          call "LLVMGetNamedFunction" using
@@ -2011,14 +2696,51 @@
       * Check if `token-string` is a verb. If it is, set `tmp-bool` to 'Y'.
       * Otherwise, 'N'.
        is-token-verb.
-         if pic-buffer = "MOVE" or
-            pic-buffer = "CALL" or
-            pic-buffer = "DISPLAY" or
-            pic-buffer = "PERFORM" or
-            pic-buffer = "GOBACK" or
-            pic-buffer = "EXIT"
+         if pic-buffer-upper = "MOVE" or
+            pic-buffer-upper = "CALL" or
+            pic-buffer-upper = "DISPLAY" or
+            pic-buffer-upper = "PERFORM" or
+            pic-buffer-upper = "GOBACK" or
+            pic-buffer-upper = "SET" or
+            pic-buffer-upper = "EXIT"
            move 'Y' to tmp-bool
          else
-           move 'Y' to tmp-bool
+           move 'N' to tmp-bool
          end-if.
-       end-is-token-verb.
+
+      * Check if `token-string` is the corresponding `end-*` of a verb.
+      * If it is, set `tmp-bool` to 'Y'.
+       is-token-verb-end.
+         if pic-buffer-upper = "END-IF" or
+            pic-buffer-upper = "END-PERFORM"
+           move 'Y' to tmp-bool
+         else
+           move 'N' to tmp-bool
+         end-if.
+
+      * Set `tmp-bool` to `Y` if the `llvm-type-res` is a PIC type.
+      *
+      * TODO: Rather than infering this from the llvm type, we should pass
+      * something from `get-expression` indicating if this was PIC or not.
+       llvm-type-res-is-pic.
+         move 'N' to tmp-bool.
+         call "LLVMGetTypeKind" using
+              by value llvm-type-res
+              returning tmp-int.
+         if tmp-int not = LLVMArrayTypeKind
+           exit paragraph.
+
+         call "LLVMGetElementType" using
+              by value llvm-type-res
+              returning llvm-type-res.
+         call "LLVMGetTypeKind" using
+              by value llvm-type-res
+              returning tmp-int.
+         if tmp-int not = LLVMIntegerTypeKind
+           exit paragraph.
+
+         call "LLVMGetIntTypeWidth" using
+              by value llvm-type-res
+              returning tmp-unsigned-int.
+         if tmp-unsigned-int = 8
+           move 'Y' to tmp-bool.
