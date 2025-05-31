@@ -178,15 +178,20 @@
 
       * Parse a string literal.
          if read-char = '"'  or read-char = "'"
-           move read-char to starting-quote-char
-           perform forever
+           perform handle-string-literal
+           goback
+         end-if.
+
+      * See if this is a hexadecimal string literal.
+         if read-char = 'x'
+           perform do-peek-char
+           if peek-char = '"' or peek-char = "'"
              perform do-get-char
              call "string-push-back" using token-string get-char
-             if get-char = starting-quote-char
-               exit perform
-             end-if
-           end-perform
-           goback
+             move get-char to read-char
+             perform handle-string-literal
+             goback
+           end-if
          end-if.
 
       * Parse an identifier.
@@ -258,3 +263,13 @@
              when "9"
                display "CONFLICT_ATTRIBUTE"
            end-evaluate.
+
+       handle-string-literal.
+         move read-char to starting-quote-char.
+         perform forever
+           perform do-get-char
+           call "string-push-back" using token-string get-char
+           if get-char = starting-quote-char
+             exit perform
+           end-if
+         end-perform.

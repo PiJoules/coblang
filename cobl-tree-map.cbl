@@ -44,6 +44,10 @@
            01 tree-map-ctor-arg usage program-pointer.
            01 tree-map-dtor-arg usage program-pointer.
 
+      * This should point to an entry that takes one pointer argument for
+      * the key and another pointer argument for the value.
+           01 foreach-callback-arg usage program-pointer.
+
            01 key-arg usage pointer.
            01 val-arg usage pointer.
            01 cmp-return-arg usage binary-int.
@@ -167,6 +171,30 @@
 
        entry "tree-map-value" using local-tree-map ptr-return-arg.
          move tree-map-value in local-tree-map to ptr-return-arg.
+         goback.
+
+       entry "tree-map-foreach" using local-tree-map
+             foreach-callback-arg.
+         if tree-map-key in local-tree-map = null
+           goback.
+
+         call local-tree-map using tree-map-key in local-tree-map
+              tree-map-value in local-tree-map.
+
+         if tree-map-left-node in local-tree-map not = null
+           set address of node-storage to
+               tree-map-left-node in local-tree-map
+           call "tree-map-foreach" using node-storage
+                foreach-callback-arg
+         end-if.
+
+         if tree-map-right-node in local-tree-map not = null
+           set address of node-storage to
+               tree-map-right-node in local-tree-map
+           call "tree-map-foreach" using node-storage
+                foreach-callback-arg
+         end-if.
+
          goback.
 
       * Store a pointer value in the tree map given a key.

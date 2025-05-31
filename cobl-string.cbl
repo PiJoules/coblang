@@ -254,6 +254,14 @@
          move src-char-buffer to char-return.
          goback.
 
+       entry "string-back" using local-string char-return.
+         move cobl-string-ptr in local-string to src-ptr.
+         set src-ptr up by cobl-string-length in local-string.
+         set src-ptr down by 1.
+         set address of src-char-buffer to src-ptr.
+         move src-char-buffer to char-return.
+         goback.
+
        entry "string-at" using local-string idx-arg char-return.
          move cobl-string-ptr in local-string to src-ptr.
          set src-ptr up by idx-arg.
