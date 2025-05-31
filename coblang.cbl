@@ -96,9 +96,6 @@
            set argv up by function byte-length(arg)
          end-perform.
 
-         display "compiling: " no advancing.
-         call "string-display" using input-file 'Y'.
-
          call "lexer-construct" using
               coblang-lexer
               input-file.
@@ -114,9 +111,6 @@
          if dump-ir = 'Y'
            call "dump-module" using coblang-codegen.
 
-         display "writing to: " no advancing.
-         call "string-display" using output-file 'Y'.
-
          call "write-obj-file" using
               coblang-codegen
               cobl-string-ptr in output-file.
@@ -127,7 +121,7 @@
          call "string-destroy" using input-file.
          call "string-destroy" using output-file.
 
-         STOP RUN.
+         STOP RUN returning 0.
 
        handle-output-flag.
          set idx up by 1.

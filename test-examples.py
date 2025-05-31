@@ -16,16 +16,13 @@ class TestCompiler:
 
         for filename, flags in files:
             objfile = str(BUILD_DIR / filename.name) + ".o"
-            res = subprocess.run(
-                [self.bin, str(filename), "-o", objfile] + flags, capture_output=True
-            )
-            self.assertEqual(res.returncode, 0)
+            res = subprocess.run([self.bin, str(filename), "-o", objfile] + flags)
+            self.assertEqual(res.returncode, 0, res)
             objfiles.append(objfile)
 
         exefile = str(BUILD_DIR / "a.out")
         res = subprocess.run(
             [os.environ.get("CC", "clang"), "-o", exefile] + objfiles,
-            capture_output=True,
         )
         self.assertEqual(res.returncode, 0)
 
@@ -84,6 +81,17 @@ class TestCompiler:
                 ]
             ),
             "abc123    \n",
+        )
+
+    def test_cobl_ctype(self):
+        self.assertEqual(
+            self.invoke(
+                [
+                    (EXAMPLES_DIR / "cobl-ctype-example.cbl", []),
+                    (EXAMPLES_DIR / "invoke-cobl-ctype-example.cbl", ["-x"]),
+                ]
+            ),
+            "1) Y\n2) N\n3) N\n4) N\n5) N\n6) Y\n",
         )
 
 

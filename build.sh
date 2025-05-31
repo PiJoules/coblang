@@ -41,6 +41,7 @@ ${COBC} ${COBL_FLAGS} -c ${SRCDIR}/cobl-strlen.cbl
 ${COBC} ${COBL_FLAGS} -c ${SRCDIR}/cobl-utils.cbl
 ${COBC} ${COBL_FLAGS} -c ${SRCDIR}/cobl-vector.cbl
 ${COBC} ${COBL_FLAGS} -c ${SRCDIR}/cobl-tree-map.cbl
+${COBC} ${COBL_FLAGS} -c ${SRCDIR}/exprs.cbl
 ${COBC} ${COBL_FLAGS} -x \
   ${LLVM_CONFIG_CORE_LIBS} ${LLVM_CONFIG_LD_FLAGS} \
   ${LLVM_CONFIG_SYSTEM_LIBS} \
@@ -48,7 +49,7 @@ ${COBC} ${COBL_FLAGS} -x \
   -o coblang \
   coblang.o cobl-ctype.o cobl-utils.o cobl-vector.o \
   cobl-memcpy.o lexer.o codegen.o cobl-string.o \
-  cobl-strlen.o cobl-tree-map.o
+  cobl-strlen.o cobl-tree-map.o exprs.o
 
 ${COBC} ${COBL_FLAGS} -m cobl-string.o -L${COBC_LIB_DIR}
 ${COBC} ${COBL_FLAGS} -m cobl-memcpy.o -L${COBC_LIB_DIR}
